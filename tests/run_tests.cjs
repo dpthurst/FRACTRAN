@@ -46,16 +46,21 @@ const nOf = (s) => (s.kind === "arith" ? s.n : C.factToN(s.fact));
 // Replay exactly the oracle's loop: event check on the current state at the
 // top of each iteration (for monomial specs), then one step; a halt always
 // appends a halt event whose value is the outputPrime exponent (or null).
+// The arithmetic path checks events with evalEventN (division only, no
+// factoring); the registers path with evalEventFact.
 function replay(prog, spec, n0, maxSteps, engine) {
   const mk = engine === "arith" ? C.newArithState : C.newFactState;
   const stepFn = engine === "arith" ? C.arithStep : C.factStep;
+  const evCheck = (s) => engine === "arith"
+    ? C.evalEventN(spec, s.n)
+    : C.evalEventFact(spec, s.fact);
   let st = mk(n0);
   const events = [];
   const traj = [nOf(st)];
   const fired = [];
   while (st.step < maxSteps) {
     if (spec.kind === "monomial") {
-      const ev = C.evalEvent(spec, st);
+      const ev = evCheck(st);
       if (ev.fire) events.push({ step: st.step, kind: "monomial", value: ev.value });
     }
     if (!st.halted) {
@@ -68,10 +73,7 @@ function replay(prog, spec, n0, maxSteps, engine) {
     }
     events.push({
       step: st.step, kind: "halt",
-      value: spec.outputPrime
-        ? (st.fact.has(BigInt(spec.outputPrime))
-           ? st.fact.get(BigInt(spec.outputPrime)) : null)
-        : null,
+      value: spec.outputPrime ? evCheck(st).value : null,
     });
     break;
   }

@@ -10,9 +10,10 @@
 <header id="topbar">
   <h1>FRACTRAN <span class="sub">playground</span></h1>
   <div id="engineToggle" title="Two equivalent engines. 'Arithmetic' works
-    directly on the big integer n, exactly as Conway's definition reads.
-    'Registers' stores n as its prime factorization — the counter-machine
-    view. Switching resets the run.">
+    directly on the big integer n and nothing but division — test n % den,
+    then n → n/den·num: Conway's definition, verbatim. 'Registers' stores n
+    as its prime factorization — the counter-machine view. Switching resets
+    the run.">
     <button data-engine="arith" class="on">arithmetic&nbsp;n</button>
     <button data-engine="fact">registers&nbsp;p^e</button>
   </div>

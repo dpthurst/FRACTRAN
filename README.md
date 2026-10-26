@@ -29,9 +29,10 @@ python3 -m http.server 8000     # then http://localhost:8000
 - **Chart:** log₁₀ n over steps, with orange dots at events — PRIMEGAME's
   sawtooth is the picture of the article.
 - **Engine toggle (top):** two equivalent implementations, switchable live:
-  - *arithmetic* — works directly on the big integer `n` (BigInt), exactly
-    as the definition reads, with a factorization cache updated
-    incrementally alongside;
+  - *arithmetic* — works directly on the big integer `n` and does **nothing
+    but divide**: test `n % den`, then `n → n/den·num`. No factorization
+    anywhere in the engine; event checks divide by the event's own primes.
+    (The register panel is a display-layer view maintained by the UI.)
   - *registers* — stores `n` as its prime factorization, the counter-machine
     view where each exponent is a register.
 
@@ -92,11 +93,13 @@ python3 tools/oracle.py
 node tests/run_tests.cjs        # ~/node/bin/node on this VM
 ```
 
-**Negative control.** The test harness must be able to fail:
-`EXAMPLES_PATH=<corrupted copy> node tests/run_tests.cjs` (and the same
-flag on the oracle) — e.g. with one fraction of the adder swapped — is
-verified to be caught, loud and specific. The check that cannot fail is
-not a check.
+**Negative controls.** Each layer must be able to fail, and both are
+verified to: corrupting a *program* (one fraction of the adder swapped)
+makes `tools/oracle.py` exit non-zero naming the broken claim — semantic
+checking is the oracle's job; tampering with a *fixture* (a changed
+expected `n`, an off-by-one step count) makes `node tests/run_tests.cjs`
+exit non-zero pinpointing the tampered values across both engines. The
+check that cannot fail is not a check.
 
 The layering earned its keep during development: the oracle's first
 "interesting event" checker mishandled monomials like `{"2":1,"5":1}` when a
@@ -127,7 +130,7 @@ python3 tools/build_examples.py && python3 tools/oracle.py && node tests/run_tes
 
 ```
 index.html            the app (open this)
-core.js               engines: parsing, arithmetic + factorization, events
+core.js               engines: parsing, pure-division arithmetic + factorization, events
 app.js                UI: library, controls, registers, events, chart, trace
 style.css             styling
 examples.js           GENERATED example library (edit tools/build_examples.py)
@@ -144,5 +147,6 @@ README.md                 this file
 Programs were transcribed from: Wikipedia's FRACTRAN article (raw wikitext),
 the esolangs wiki's Fractran page, and MathWorld — each named per example in
 `tools/build_examples.py` and in the app. Every transcription was then
-verified by simulation; the one that failed (Havil's ten-fraction
-Kilminster listing) is documented above instead of published.
+verified by simulation before being published; both Kilminster listings and
+the PIGAME transcription needed the checker bug fixed first (see above), and
+all verify clean as shipped.

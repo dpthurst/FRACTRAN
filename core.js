@@ -10,10 +10,11 @@
 // Two interchangeable engines are provided:
 //
 //   ArithmeticEngine — works directly on the integer n as a BigInt, exactly
-//     as the definition reads: test divisibility, multiply by the fraction.
-//     A prime-factorization cache is kept alongside n (updated incrementally
-//     from the fraction's factorization, never by refactoring n) so that
-//     register views and "interesting event" tests stay cheap.
+//     as the definition reads, and does NOTHING but divide: test n % den,
+//     then replace n by n/den·num.  No factorization lives in this engine;
+//     event checks are done by repeated division by the event spec's own
+//     primes.  (Factorization for display is the UI's business, not the
+//     engine's.)
 //
 //   FactorEngine — the state IS the factorization (a map prime -> exponent),
 //     i.e. the counter-machine view: each exponent is a register.  n is
@@ -40,9 +41,11 @@ const FractranCore = (() => {
     return true;
   }
 
-  // Factor a BigInt by trial division.  Only used on inputs and on fraction
-  // numerators/denominators, which are small; refuse to churn on something
-  // with a large prime factor.
+  // Factor a BigInt by trial division.  Used for parsing (fraction
+  // numerators/denominators), the factor engine's initial state, and the
+  // UI's register display — never by the arithmetic engine.  The prime bound
+  // exists to fail loudly instead of looping forever on a number with a
+  // large prime factor; demo inputs are far below it.
   function factorBig(n, maxPrime = 1000000) {
     if (n <= 0n) throw new Error("cannot factor " + n);
     const f = new Map();
@@ -124,11 +127,10 @@ const FractranCore = (() => {
 
   // ---------------- engine 1: direct arithmetic on n ----------------
 
-  // A state: { n: BigInt, fact: Map, step: number, fired: number|null,
-  //            halted: boolean }.  fact is the factorization of n, kept in
-  // step with n by incremental updates (never by refactoring n).
+  // A state: { n: BigInt, step: number, fired: number|null, halted: boolean }.
+  // Nothing but n: the engine never factors.
   function newArithState(n) {
-    return { kind: "arith", n, fact: factorBig(n), step: 0, fired: null, halted: false };
+    return { kind: "arith", n, step: 0, fired: null, halted: false };
   }
 
   function arithStep(prog, st) {
@@ -136,19 +138,9 @@ const FractranCore = (() => {
     for (let i = 0; i < prog.fractions.length; i++) {
       const f = prog.fractions[i];
       if (st.n % f.den !== 0n) continue;
-      const n2 = st.n / f.den * f.num;
-      const fact = new Map(st.fact);
-      for (const [p, e] of f.denF) {
-        const e2 = (fact.get(p) || 0) - e;
-        if (e2 > 0) fact.set(p, e2); else fact.delete(p);
-      }
-      for (const [p, e] of f.numF) {
-        const e2 = (fact.get(p) || 0) + e;
-        if (e2 > 0) fact.set(p, e2); else fact.delete(p);
-      }
-      return { kind: "arith", n: n2, fact, step: st.step + 1, fired: i, halted: false };
+      return { kind: "arith", n: st.n / f.den * f.num, step: st.step + 1, fired: i, halted: false };
     }
-    return { kind: "arith", n: st.n, fact: st.fact, step: st.step, fired: null, halted: true };
+    return { kind: "arith", n: st.n, step: st.step, fired: null, halted: true };
   }
 
   // ---------------- engine 2: the factorization (counter machine) ------
@@ -192,31 +184,65 @@ const FractranCore = (() => {
   //     k >= minExp; the event value is k.
   //   { kind: "halt", label: "...", outputPrime: "5" }
   //     fires when the program halts; the event value is the exponent of
-  //     outputPrime in the final n (or null if no prime is named).
+  //     outputPrime in the final n (null if the prime is absent or none is
+  //     named).
+  //
+  // Two equivalent evaluators, one per engine.  evalEventN uses NOTHING but
+  // division (repeated division by the spec's own primes) — the arithmetic
+  // engine never factors.  evalEventFact reads the factor engine's map.
 
-  function evalEvent(spec, st) {
+  function evalEventN(spec, n) {
     if (spec.kind === "halt") {
-      if (!st.halted) return { fire: false };
+      if (typeof n !== "bigint") throw new Error("evalEventN needs a BigInt n");
+      if (!spec.outputPrime) return { fire: true, value: null };
+      const p = BigInt(spec.outputPrime);
+      if (n % p !== 0n) return { fire: true, value: null };
+      let e = 0, m = n;
+      while (m % p === 0n) { m /= p; e++; }
+      return { fire: true, value: e };
+    }
+    if (spec.kind === "monomial") {
+      let rem = n;
+      const ks = [];
+      for (const pStr in spec.monomial) {
+        const p = BigInt(pStr);
+        const unit = spec.monomial[pStr];
+        let e = 0;
+        while (rem % p === 0n) { rem /= p; e++; }
+        if (e % unit !== 0) return { fire: false };
+        ks.push(e / unit);
+      }
+      if (rem !== 1n) return { fire: false };          // some other prime survives
+      if (ks.length === 0) return { fire: false };
+      const k = ks[0];
+      if (ks.some((x) => x !== k)) return { fire: false };
+      if (k < (spec.minExp || 1)) return { fire: false };
+      return { fire: true, value: k };
+    }
+    throw new Error("unknown event kind: " + spec.kind);
+  }
+
+  function evalEventFact(spec, fact) {
+    if (spec.kind === "halt") {
       let value = null;
       if (spec.outputPrime) {
-        const e = st.fact.get(BigInt(spec.outputPrime));
+        const e = fact.get(BigInt(spec.outputPrime));
         value = e === undefined ? null : e;   // absent prime -> null (as the oracle)
       }
       return { fire: true, value };
     }
     if (spec.kind === "monomial") {
-      if (st.halted) return { fire: false };
       let k = null;
       for (const pStr in spec.monomial) {
         const p = BigInt(pStr);
         const unit = spec.monomial[pStr];
-        const e = st.fact.get(p) || 0;
+        const e = fact.get(p) || 0;
         if (e % unit !== 0) return { fire: false };
         const kk = e / unit;
         if (k === null) k = kk; else if (k !== kk) return { fire: false };
       }
       // every prime present in n must be part of the monomial
-      for (const p of st.fact.keys()) {
+      for (const p of fact.keys()) {
         if (!(String(p) in spec.monomial)) return { fire: false };
       }
       if (k === null || k < (spec.minExp || 1)) return { fire: false };
@@ -256,7 +282,7 @@ const FractranCore = (() => {
     gcdBig, isPrime, factorBig,
     parseProgram, parseInput,
     newArithState, arithStep, newFactState, factStep, factToN,
-    evalEvent, factToString, nToStringTruncated, log10Approx,
+    evalEventN, evalEventFact, factToString, nToStringTruncated, log10Approx,
   };
 
 })();

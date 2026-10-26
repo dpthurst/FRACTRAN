@@ -94,6 +94,8 @@ def is_prime(p):
 def run(fracs, n, max_steps):
     """Simulate from the definition; return (steps, halted, events).
 
+    Event checks divide n by the event spec's own primes and nothing else --
+    no general factoring anywhere, mirroring the arithmetic engine (core.js).
     events: list of (step, kind, value) for pure-power (monomial) states and
     for the halt, computed here independently of the JS event code.
     """
@@ -104,17 +106,31 @@ def run(fracs, n, max_steps):
     out_pr = int(spec.get("outputPrime") or 0)
     min_exp = int(spec.get("minExp") or 1)
 
-    def factor_exponents(x):
-        f = {}
-        d = 2
-        while d * d <= x:
-            while x % d == 0:
-                f[d] = f.get(d, 0) + 1
-                x //= d
-            d += 1 if d == 2 else 2
-        if x > 1:
-            f[x] = f.get(x, 0) + 1
-        return f
+    def monomial_k(x):
+        """k if x is a pure power of the monomial with exponent k, else None."""
+        rem = x
+        ks = set()
+        for p, unit in m_primes.items():
+            e = 0
+            while rem % p == 0:
+                rem //= p
+                e += 1
+            if e % unit != 0:
+                return None
+            ks.add(e // unit)
+        if rem != 1 or len(ks) != 1:
+            return None
+        return ks.pop()
+
+    def exp_of_prime(x, p):
+        """exponent of p in x, by repeated division (None if absent)."""
+        if x % p != 0:
+            return None
+        e = 0
+        while x % p == 0:
+            x //= p
+            e += 1
+        return e
 
     events = []
     steps = 0
@@ -124,24 +140,9 @@ def run(fracs, n, max_steps):
     while steps < max_steps:
         # event check on the CURRENT n (before stepping)
         if m_primes is not None:
-            f = factor_exponents(n)
-            ks = set()
-            ok = True
-            for p, unit in m_primes.items():
-                e = f.get(p, 0)          # absent monomial prime -> exponent 0
-                if e % unit != 0:
-                    ok = False
-                    break
-                ks.add(e // unit)
-            if ok:
-                for p in f:
-                    if p not in m_primes:
-                        ok = False
-                        break
-            if ok and len(ks) == 1:
-                k = ks.pop()
-                if k >= min_exp:
-                    events.append((steps, "monomial", k))
+            k = monomial_k(n)
+            if k is not None and k >= min_exp:
+                events.append((steps, "monomial", k))
         for i, (num, den) in enumerate(fracs):
             if (n * num) % den == 0:
                 n = n // den * num
@@ -151,7 +152,7 @@ def run(fracs, n, max_steps):
                 break
         else:
             halted = True
-            value = factor_exponents(n).get(out_pr) if out_pr else None
+            value = exp_of_prime(n, out_pr) if out_pr else None
             events.append((steps, "halt", value))
             break
     return dict(steps=steps, halted=halted, final_n=n, events=events,

@@ -29,6 +29,13 @@
   let chart = [];          // {step, log10} per step (sampled if huge)
   let events = [];         // interesting events fired so far
   let trace = [];          // recent steps for the trace table
+  // Display-only factorization for the arithmetic engine (the engine itself
+  // never factors).  Maintained incrementally from the fractions that fired
+  // since the last render; rebuilt on reset, undone on Back.
+  let displayFact = null;
+  let displayFactSkipped = false;
+  let firedQueue = [];     // fraction indices fired since the last render
+  const VIEW_QUEUE_CAP = 200000;
   let running = false;
   let timer = null;
   let stopAtNextEvent = false;
@@ -40,6 +47,16 @@
   function newState(n) { return engine === "arith" ? C.newArithState(n) : C.newFactState(n); }
 
   function nOf(state) { return state.kind === "arith" ? state.n : C.factToN(state.fact); }
+
+  // The factorization the UI shows: the factor engine has it by nature; the
+  // arithmetic engine gets a display cache (never part of engine state).
+  function viewFact() {
+    return engine === "fact" ? (st ? st.fact : null) : displayFact;
+  }
+
+  function tryFactor(n) {
+    try { return C.factorBig(n); } catch (e) { return null; }
+  }
 
   // ---------------- event specification ----------------
 
@@ -72,6 +89,9 @@
     }
     st = newState(n);
     history = []; chart = []; events = []; trace = [];
+    displayFact = engine === "arith" ? tryFactor(n) : null;
+    displayFactSkipped = false;
+    firedQueue = [];
     saveLocal();
     render();
   }
@@ -87,9 +107,31 @@
     });
   }
 
+  // Event check for the current state, per engine.  Callers only consult
+  // monomial specs pre-step and halt specs at a halt (the run-loop points).
+  function evalEventHere(spec) {
+    return engine === "arith" ? C.evalEventN(spec, st.n) : C.evalEventFact(spec, st.fact);
+  }
+
+  function applyFiredToDisplayFact(i, undo) {
+    if (!displayFact) return;
+    const f = prog.fractions[i];
+    const sub = undo ? f.numF : f.denF;
+    const add = undo ? f.denF : f.numF;
+    for (const [p, e] of sub) {
+      const e2 = (displayFact.get(p) || 0) - e;
+      if (e2 > 0) displayFact.set(p, e2); else displayFact.delete(p);
+    }
+    for (const [p, e] of add) {
+      const e2 = (displayFact.get(p) || 0) + e;
+      if (e2 > 0) displayFact.set(p, e2); else displayFact.delete(p);
+    }
+  }
+
   function snapshot() {
     return {
-      n: nOf(st), fact: st.fact, step: st.step, fired: st.fired,
+      n: nOf(st), fact: st.kind === "fact" ? st.fact : null,
+      step: st.step, fired: st.fired,
       chartLen: chart.length, eventsLen: events.length, traceLen: trace.length,
     };
   }
@@ -97,8 +139,8 @@
   function stepOnce() {
     if (!st || st.halted) return false;
     const spec = eventSpec();
-    if (spec) {
-      const ev = C.evalEvent(spec, st);
+    if (spec && spec.kind === "monomial") {
+      const ev = evalEventHere(spec);
       if (ev.fire) recordEvent(st.step, ev, spec);
     }
     if (chart.length === 0 || chart[chart.length - 1].step !== st.step) {
@@ -117,10 +159,22 @@
         chart = nc;
       }
     }
+    if (engine === "arith" && st.fired !== null && st.fired !== undefined) {
+      if (firedQueue.length >= VIEW_QUEUE_CAP) {
+        displayFact = null; displayFactSkipped = true; firedQueue = [];
+      } else firedQueue.push(st.fired);
+    }
     if (st.halted) {
-      if (spec) {
-        const ev = C.evalEvent(spec, st);
+      if (spec && spec.kind === "monomial") {
+        const ev = evalEventHere(spec);
         if (ev.fire) recordEvent(st.step, ev, spec);
+      }
+      if (spec) {
+        events.push({
+          step: st.step, kind: "halt",
+          value: spec.outputPrime ? evalEventHere(spec).value : null,
+          label: spec.label || "halt",
+        });
       }
       haltedAt = st.step;
     }
@@ -193,7 +247,7 @@
     trace.push({
       step: st.step,
       fired: f === null || f === undefined ? (st.halted ? "—" : "") : prog.fractions[f].raw,
-      n: C.factToString(st.fact, null),
+      n: C.factToString(viewFact() || new Map(), null),
     });
     if (trace.length > LOG_KEEP) trace.splice(0, trace.length - LOG_KEEP);
   }
@@ -201,12 +255,21 @@
   // ---------------- rendering ----------------
 
   function render() {
+    drainFiredQueue();
     renderLibrary();
     renderState();
     renderEvents();
     renderTrace();
     drawChart();
     renderButtons();
+  }
+
+  // Apply the fractions that fired since the last render to the display
+  // factorization (arithmetic engine only — the engine itself never factors).
+  function drainFiredQueue() {
+    if (engine !== "arith" || !firedQueue.length) return;
+    if (displayFact) for (const i of firedQueue) applyFiredToDisplayFact(i, false);
+    firedQueue = [];
   }
 
   function renderLibrary() {
@@ -295,7 +358,15 @@
   function renderRegisters() {
     const box = $("registers");
     const legend = example ? example.registers || {} : {};
-    const entries = [...st.fact.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
+    const fact = viewFact();
+    $("regNote").textContent = example && Object.keys(legend).length
+      ? "(named = the example's register map)" : "(exponents of the primes in n)";
+    if (!fact) {
+      box.innerHTML = '<span class="reg">register view skipped — n grew too large to factor for display'
+        + ' (the arithmetic engine itself never factors; the registers engine keeps it exactly)</span>';
+      return;
+    }
+    const entries = [...fact.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
     $("regNote").textContent = example && Object.keys(legend).length
       ? "(named = the example's register map)" : "(exponents of the primes in n)";
     if (!entries.length) { box.innerHTML = '<span class="reg">n = 1 (all registers zero)</span>'; return; }
@@ -424,14 +495,20 @@
   function doBack() {
     stopRun();
     if (!history.length) return;
+    const undoneFired = st ? st.fired : null;
     const h = history.pop();
     chart.length = Math.min(h.chartLen, chart.length);
     events.length = h.eventsLen;
     trace.length = h.traceLen;
     haltedAt = null;
-    st = engine === "arith"
-      ? { kind: "arith", n: h.n, fact: h.fact, step: h.step, fired: h.fired, halted: false }
-      : { kind: "fact", fact: h.fact, n: null, step: h.step, fired: h.fired, halted: false };
+    if (engine === "arith") {
+      st = { kind: "arith", n: h.n, step: h.step, fired: h.fired, halted: false };
+      if (displayFact && undoneFired !== null && undoneFired !== undefined) {
+        applyFiredToDisplayFact(undoneFired, true);   // exact inverse: one step
+      }
+    } else {
+      st = { kind: "fact", fact: h.fact, n: null, step: h.step, fired: h.fired, halted: false };
+    }
     render();
   }
 
