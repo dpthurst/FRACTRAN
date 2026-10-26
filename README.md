@@ -87,10 +87,19 @@ Three independent layers, all reproducible from the repo:
 3. **`tests/run_tests.cjs`** — replays every fixture through BOTH real JS
    engines and demands exact agreement (and that the engines agree with
    each other). Run:
+4. **`tests/dom-smoke.cjs`** — loads the actual page into jsdom, evaluates
+   the very scripts a browser would, and clicks through the UI: the library
+   renders all 17 examples, stepping updates the displayed `n` (2 → 15 in
+   PRIMEGAME), run/pause respects the speed setting, the engine toggle
+   resets, loading the adder and stepping to its halt shows the decoded
+   output, and Back undoes a step. Needs jsdom, deliberately not a repo
+   dependency: `npm i --prefix .scratch/js jsdom` (skipped loudly when
+   absent).
 
 ```
 python3 tools/oracle.py
 node tests/run_tests.cjs        # ~/node/bin/node on this VM
+node tests/dom-smoke.cjs
 ```
 
 **Negative controls.** Each layer must be able to fail, and both are
@@ -109,10 +118,11 @@ the esolangs wiki's recorded J session disagreed with the "disproof", and
 the bug was fixed in the oracle before anything shipped — with both
 Kilminster programs then verifying clean and entering the library.
 
-Known unverified part: the *interactive UI* (buttons, chart, layout). The
-logic under it is fully tested headlessly; the clicking was not — the
-build environment has no browser. If something looks off in the UI, the
-engines in `core.js` are the tested ground truth.
+Known unverified part: real-browser *rendering and layout* (chart pixels,
+fonts, responsive grid) — jsdom has neither. The UI wiring, handlers and
+state-to-DOM flow are tested headlessly by `tests/dom-smoke.cjs`; the first
+test of the page as a page is the author opening it. If something looks
+off, the engines in `core.js` are the tested ground truth.
 
 ## Rebuilding the generated pieces
 

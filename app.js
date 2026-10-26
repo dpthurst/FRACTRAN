@@ -165,6 +165,11 @@
       } else firedQueue.push(st.fired);
     }
     if (st.halted) {
+      // The halt was discovered on a transition that changed nothing: the
+      // pre-halt snapshot is the same state as the halted one. Drop it so
+      // "back" from a halt goes to the previous real state, not to an
+      // identical-looking un-halted copy.
+      if (history.length && history[history.length - 1].step === st.step) history.pop();
       if (spec && spec.kind === "monomial") {
         const ev = evalEventHere(spec);
         if (ev.fire) recordEvent(st.step, ev, spec);
