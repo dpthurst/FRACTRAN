@@ -197,7 +197,11 @@ const FractranCore = (() => {
   function evalEvent(spec, st) {
     if (spec.kind === "halt") {
       if (!st.halted) return { fire: false };
-      const value = spec.outputPrime ? (st.fact.get(BigInt(spec.outputPrime)) || 0) : null;
+      let value = null;
+      if (spec.outputPrime) {
+        const e = st.fact.get(BigInt(spec.outputPrime));
+        value = e === undefined ? null : e;   // absent prime -> null (as the oracle)
+      }
       return { fire: true, value };
     }
     if (spec.kind === "monomial") {
