@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FRACTRAN playground</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="topbar">
+  <h1>FRACTRAN <span class="sub">playground</span></h1>
+  <div id="engineToggle" title="Two equivalent engines. 'Arithmetic' works
+    directly on the big integer n, exactly as Conway's definition reads.
+    'Registers' stores n as its prime factorization — the counter-machine
+    view. Switching resets the run.">
+    <button data-engine="arith" class="on">arithmetic&nbsp;n</button>
+    <button data-engine="fact">registers&nbsp;p^e</button>
+  </div>
+  <div class="tagline">multiply n by the first fraction that keeps it integral;
+    halt when none does <span class="cite">(Conway 1987)</span></div>
+</header>
+
+<div id="layout">
+  <nav id="library" aria-label="Example library"></nav>
+
+  <section id="program-pane">
+    <div class="pane-title">program
+      <span id="progMeta"></span></div>
+    <textarea id="program" spellcheck="false" rows="14"></textarea>
+    <div id="program-errors"></div>
+    <label for="inputN">input&nbsp;n</label>
+    <div class="input-row">
+      <input id="inputN" spellcheck="false">
+      <button id="btnApply" title="re-parse the program and restart from the given n">apply</button>
+    </div>
+    <div id="controls">
+      <button id="btnStep" title="one step">▶| step</button>
+      <button id="btnRun" title="run until halted or stopped">▶ run</button>
+      <button id="btnBack" title="one step back">◀| back</button>
+      <button id="btnNext" title="run until the next highlighted event (or a halt)">⏭ next event</button>
+      <button id="btnReset">⟲ reset</button>
+      <select id="speed" title="steps per second">
+        <option value="10">10 / s</option>
+        <option value="100">100 / s</option>
+        <option value="1000">1 000 / s</option>
+        <option value="max" selected>max</option>
+      </select>
+      <span id="stepCounter">step 0</span>
+    </div>
+  </section>
+
+  <section id="state-pane">
+    <div class="pane-title">state</div>
+    <div id="haltBadge" class="badge hidden">halted</div>
+    <div id="fired"></div>
+    <div class="pane-sub">n</div>
+    <div id="nValue" class="nbox"></div>
+    <div class="pane-sub">registers <span id="regNote"></span></div>
+    <div id="registers"></div>
+    <div class="pane-sub">events</div>
+    <div id="events"></div>
+  </section>
+
+  <section id="chart-pane">
+    <div class="pane-title">log₁₀ n <span id="chartNote"></span></div>
+    <canvas id="chart"></canvas>
+  </section>
+
+  <section id="log-pane">
+    <div class="pane-title">trace <span id="logNote"></span></div>
+    <table id="log"></table>
+  </section>
+</div>
+
+<footer id="colophon">
+  FRACTRAN — J. H. Conway, <em>FRACTRAN: a simple universal programming
+  language for arithmetic</em> (1987). Example sources are named per program;
+  every published program here is verified computationally by
+  <code>tools/oracle.py</code> (see README).
+</footer>
+
+<script src="core.js"></script>
+<script src="examples.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
