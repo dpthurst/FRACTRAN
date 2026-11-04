@@ -224,6 +224,84 @@ function check(label, cond, detail) {
     check("chips view comes back", window.document.querySelectorAll("#registers .barrow").length === 0);
   }
 
+  // ---- event dots stay pinned to their own values as the run continues ----
+  {
+    click([...window.document.querySelectorAll("#library button")].find((b) => b.dataset.id === "primegame"));
+    $("speed").value = "max";
+    const runTo = async (target) => {
+      click($("btnRun"));
+      for (;;) {
+        await sleep(15);
+        if (stepNum() >= target || !$("btnRun").disabled === false) break;
+        if (stepNum() >= target) break;
+      }
+      click($("btnRun"));                    // pause (also renders)
+      await sleep(30);
+    };
+    await runTo(600);
+    drawn.length = 0;
+    click(window.document.querySelector('#regMode button[data-mode="bars"]'));   // one render
+    const arcs1 = drawn.filter((d) => d[0] === "arc").map((d) => [d[1], d[2]]);
+    check("several event dots drawn by step 600", arcs1.length >= 3, String(arcs1.length));
+
+    // The dots must sit at their OWN values under the current axis.  The axis
+    // rescales as the run grows, so absolute y drifts — but it must always
+    // equal pad + (1 - (log10(event) - lo)/(hi - lo)) * (h - 2*pad), with the
+    // lo/hi the chart itself reports.  (The pre-fix code put dots on the
+    // pixel column's running maximum, which this check fails.)
+    const parseNote = () => {
+      const m = $("chartNote").textContent.match(/axis ([\d.]+) … ([\d.]+)/);
+      return m ? { lo: parseFloat(m[1]), hi: parseFloat(m[2]) } : null;
+    };
+    const axis = parseNote();
+    check("chart note reports the axis range", !!axis, $("chartNote").textContent);
+    // events panel is newest-first: reverse to draw order
+    const evs = [...$("events").querySelectorAll(".ev")]
+      .map((el) => {
+        const m = el.textContent.match(/step ([\d,]+) = (\d+)/);
+        return m ? { step: parseInt(m[1].replace(/,/g, ""), 10), k: parseInt(m[2], 10) } : null;
+      }).filter(Boolean).reverse();
+    const h = 180, pad = 6;
+    let pinned = arcs1.length > 0 && evs.length >= arcs1.length;
+    const clampY = (y) => Math.max(pad, Math.min(h - pad, y));
+    for (let i = 0; i < arcs1.length; i++) {
+      const v = evs[i].k * Math.log10(2);            // PRIMEGAME events are 2^k
+      const expected = clampY(pad + (1 - (v - axis.lo) / (axis.hi - axis.lo)) * (h - 2 * pad));
+      if (Math.abs(arcs1[i][1] - expected) > 0.75) { pinned = false; break; }
+    }
+    check("event dots sit at their own values under the current axis", pinned,
+      JSON.stringify({ arcs: arcs1.slice(0, 4), evs: evs.slice(0, 4), axis }));
+
+    await runTo(2500);
+    drawn.length = 0;
+    click(window.document.querySelector('#regMode button[data-mode="bars"]'));   // one render
+    const arcs2 = drawn.filter((d) => d[0] === "arc").map((d) => [d[1], d[2]]);
+    check("more events have fired by step 2500", arcs2.length > arcs1.length,
+      `${arcs1.length} -> ${arcs2.length}`);
+    // same pinning check after the axis has rescaled
+    const axis2 = parseNote();
+    const evs2 = [...$("events").querySelectorAll(".ev")]
+      .map((el) => {
+        const m = el.textContent.match(/step ([\d,]+) = (\d+)/);
+        return m ? { step: parseInt(m[1].replace(/,/g, ""), 10), k: parseInt(m[2], 10) } : null;
+      }).filter(Boolean).reverse();
+    let pinned2 = arcs2.length > 0 && evs2.length >= arcs2.length;
+    for (let i = 0; i < arcs2.length; i++) {
+      const v = evs2[i].k * Math.log10(2);
+      const expected = clampY(pad + (1 - (v - axis2.lo) / (axis2.hi - axis2.lo)) * (h - 2 * pad));
+      if (Math.abs(arcs2[i][1] - expected) > 0.75) { pinned2 = false; break; }
+    }
+    check("event dots stay on their values after the axis rescales", pinned2,
+      JSON.stringify({ axis2, arcs2: arcs2.slice(0, 4), evs2: evs2.slice(0, 4) }));
+    // and the earliest events only slide left smoothly as the axis stretches
+    let xSane = true;
+    for (let i = 0; i < Math.min(arcs1.length, arcs2.length); i++) {
+      if (arcs2[i][0] > arcs1[i][0] + 0.5) xSane = false;
+    }
+    check("event dots slide left smoothly (axis stretch), never jump right", xSane);
+    click(window.document.querySelector('#regMode button[data-mode="chips"]'));
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);
 })().catch((e) => { console.log("FAIL smoke crashed: " + (e && e.stack || e)); process.exit(1); });

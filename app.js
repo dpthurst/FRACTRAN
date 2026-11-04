@@ -107,6 +107,10 @@
       kind: spec.kind,
       value: ev.value,
       label: spec.label || spec.kind,
+      // the log10 of n at the moment the event fired: the chart pins each
+      // event dot to this, so dots stay at their own value instead of
+      // drifting with the pixel column's running maximum
+      log10: st ? C.log10Approx(nOf(st)) : 0,
     });
   }
 
@@ -178,11 +182,7 @@
         if (ev.fire) recordEvent(st.step, ev, spec);
       }
       if (spec) {
-        events.push({
-          step: st.step, kind: "halt",
-          value: spec.outputPrime ? evalEventHere(spec).value : null,
-          label: spec.label || "halt",
-        });
+        recordEvent(st.step, { value: spec.outputPrime ? evalEventHere(spec).value : null }, spec);
       }
       haltedAt = st.step;
     }
@@ -532,8 +532,13 @@
     }
 
     // Pure, tested geometry (core.js): every coordinate comes back finite and
-    // inside the plot box, whatever the data.
-    const geo = C.chartGeometry(chart, w, h, 6);
+    // inside the plot box, whatever the data.  The event values are part of
+    // the series for scaling purposes, so the axis always spans them and no
+    // dot is ever clamped onto the edge.
+    const pts = chart.concat(
+      events.filter((e) => Number.isFinite(e.log10))
+            .map((e) => ({ step: e.step, log10: e.log10 })));
+    const geo = C.chartGeometry(pts, w, h, 6);
     const clampY = (y) => Math.max(geo.pad, Math.min(h - geo.pad, y));
 
     // y-axis guides carrying the actual values — the vertical position alone
@@ -568,15 +573,15 @@
     }
     ctx.stroke();
 
-    // event markers: nearest column, dot on that column's envelope
+    // event markers, pinned to the value the event had when it fired
+    // (e.log10, recorded at event time) — they may slide left smoothly as
+    // the step axis stretches, but they never jump to a column maximum
     ctx.fillStyle = "#ffb347";
     for (const e of events) {
-      if (!geo.cols.length) continue;
-      const xe = geo.xOf(e.step);
-      let best = geo.cols[0];
-      for (const c of geo.cols) if (Math.abs(c.x - xe) < Math.abs(best.x - xe)) best = c;
-      const x = Math.max(geo.pad, Math.min(w - geo.pad, best.x));
-      ctx.beginPath(); ctx.arc(x, clampY(best.yMax), 3, 0, Math.PI * 2); ctx.fill();
+      if (e.log10 === undefined || !Number.isFinite(e.log10)) continue;
+      const x = Math.max(geo.pad, Math.min(w - geo.pad, geo.xOf(e.step)));
+      const y = clampY(geo.yOf(e.log10));
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
     }
 
     const cur = chart[chart.length - 1].log10;

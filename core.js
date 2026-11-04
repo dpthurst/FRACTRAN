@@ -349,9 +349,15 @@ const FractranCore = (() => {
 
   // log10 of a BigInt, good to about half a digit (via the bit length).
   // Cheap enough to sample per step for the chart.
+  // log10 of a BigInt, accurate to double precision: scale by the bit length,
+  // then take log10 of the top 53 bits.  (bit_length * log10(2) alone is off
+  // by up to 0.3 — visible as dots and readouts sitting slightly too high.)
   function log10Approx(n) {
     if (n <= 0n) return 0;
-    return n.toString(2).length * Math.log10(2);
+    const bits = n.toString(2).length;
+    if (bits <= 53) return Math.log10(Number(n));
+    const top = Number(n >> BigInt(bits - 53));      // the leading 53 bits
+    return Math.log10(top) + (bits - 53) * Math.log10(2);
   }
 
   return {

@@ -46,9 +46,14 @@ python3 -m http.server 8000     # then http://localhost:8000
   pixel column (PRIMEGAME's oscillation is the point), the bright line is the
   upper envelope, orange dots mark events, and the left edge carries the
   actual axis values plus a live "log₁₀ n = … now" readout — the vertical
-  position alone never has to be guessed at. Geometry is computed by a pure,
-  unit-tested function (`core.js` `chartGeometry`) that keeps every
-  coordinate finite and inside the box for any canvas size and any data.
+  position alone never has to be guessed at. Event dots are pinned to the
+  value the event had when it fired (recorded at event time), so as the run
+  continues they keep their own height and only slide left smoothly with the
+  stretching step axis; the axis spans the event values too, so no dot is
+  ever clamped onto an edge. Geometry is computed by a pure, unit-tested
+  function (`core.js` `chartGeometry`) that keeps every coordinate finite and
+  inside the box for any canvas size and any data, and `log10Approx` is
+  accurate to double precision (a bit-length estimate was off by up to 0.3).
 - **Engine toggle (top):** two equivalent implementations, switchable live:
   - *arithmetic* — works directly on the big integer `n` and does **nothing
     but divide**: test `n % den`, then `n → n/den·num`. No factorization
