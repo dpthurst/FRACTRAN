@@ -27,14 +27,16 @@ python3 -m http.server 8000     # then http://localhost:8000
   decoded outputs for the machines, …).
 - **Program + input (middle):** edit the fractions; input is a decimal
   integer or a product of prime powers such as `2^12 * 3^5`. `#` and `//`
-  start comments. "apply" re-parses and restarts. Under the editor, the
-  **fraction strip** shows the program as chips: the amber chip is the
-  fraction that just fired, the outlined one is the fraction that will fire
-  next (the run scrolls the amber chip into view).
+  start comments. "apply" re-parses and restarts, and the line under the
+  input echoes the parsed input in the current display mode (decimal, or its
+  prime factorization). Under the editor, the **fraction strip** shows the
+  program as chips — in the current display mode, so `78/85` reads
+  `2·3·13/5·17` in factors mode — with the amber chip marking the fraction
+  that just fired and the outlined chip the one that will fire next.
 - **Controls:** step / run / back / next-event / reset, at 10 → max steps
   per second (space = run/pause, ←/→ = back/step).
-- **State (right):** the fraction that fired, `n` itself (full value, copy
-  button for very large ones), the register view, and the decoded events.
+- **State (right):** the fraction that fired, `n` itself (copy button for the
+  full value), the register view, and the decoded events.
   Registers have two displays, toggled above the panel: **chips** (only the
   nonzero registers, compact) and **bars** — a *fixed* set of rows for every
   register the program can touch (primes in its fractions, plus the example's
@@ -42,6 +44,10 @@ python3 -m http.server 8000     # then http://localhost:8000
   that drops to zero becomes an empty row rather than disappearing, so a run
   like PRIMEGAME does not flicker; rows the last fired fraction touched are
   underlined.
+- **Numbers / factors (top):** a global display toggle — every *value* on the
+  page switches between its decimal form and its prime factorization: the
+  fraction strip, the current `n`, and the parsed input.  (The editor keeps
+  the program as written; the summarized strip is what changes.)
 - **Chart:** log₁₀ n over steps. The shaded band spans every value in each
   pixel column (PRIMEGAME's oscillation is the point), the bright line is the
   upper envelope, orange dots mark events, and the left edge carries the

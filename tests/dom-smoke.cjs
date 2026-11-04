@@ -261,12 +261,12 @@ function check(label, cond, detail) {
         const m = el.textContent.match(/step ([\d,]+) = (\d+)/);
         return m ? { step: parseInt(m[1].replace(/,/g, ""), 10), k: parseInt(m[2], 10) } : null;
       }).filter(Boolean).reverse();
-    const h = 180, pad = 6;
+    const h = 180, pad = 6, hPlot = h - 14;   // 14px reserved for the x-axis label
     let pinned = arcs1.length > 0 && evs.length >= arcs1.length;
     const clampY = (y) => Math.max(pad, Math.min(h - pad, y));
     for (let i = 0; i < arcs1.length; i++) {
       const v = evs[i].k * Math.log10(2);            // PRIMEGAME events are 2^k
-      const expected = clampY(pad + (1 - (v - axis.lo) / (axis.hi - axis.lo)) * (h - 2 * pad));
+      const expected = clampY(pad + (1 - (v - axis.lo) / (axis.hi - axis.lo)) * (hPlot - 2 * pad));
       if (Math.abs(arcs1[i][1] - expected) > 0.75) { pinned = false; break; }
     }
     check("event dots sit at their own values under the current axis", pinned,
@@ -288,7 +288,7 @@ function check(label, cond, detail) {
     let pinned2 = arcs2.length > 0 && evs2.length >= arcs2.length;
     for (let i = 0; i < arcs2.length; i++) {
       const v = evs2[i].k * Math.log10(2);
-      const expected = clampY(pad + (1 - (v - axis2.lo) / (axis2.hi - axis2.lo)) * (h - 2 * pad));
+      const expected = clampY(pad + (1 - (v - axis2.lo) / (axis2.hi - axis2.lo)) * (hPlot - 2 * pad));
       if (Math.abs(arcs2[i][1] - expected) > 0.75) { pinned2 = false; break; }
     }
     check("event dots stay on their values after the axis rescales", pinned2,
@@ -300,6 +300,90 @@ function check(label, cond, detail) {
     }
     check("event dots slide left smoothly (axis stretch), never jump right", xSane);
     click(window.document.querySelector('#regMode button[data-mode="chips"]'));
+  }
+
+  // ---- regression: speed change during a "next event" run must keep the
+  // stop-at-event contract (stopRun used to clear the flag before the
+  // restart read it, turning the run into a plain run) ----
+  {
+    click([...window.document.querySelectorAll("#library button")].find((b) => b.dataset.id === "primegame"));
+    $("speed").value = "10";
+    click($("btnNext"));
+    await sleep(60);                        // running toward the first event
+    const midRun = $("btnRun").textContent;
+    check("next event is running when the speed changes", midRun.includes("pause"), midRun);
+    $("speed").value = "max";
+    $("speed").dispatchEvent(new window.Event("change"));
+    await sleep(400);
+    check("after a speed change the run still stops at the event",
+      $("btnRun").textContent.includes("run") && !$("btnRun").textContent.includes("pause"),
+      $("btnRun").textContent);
+    check("and it stopped near the event, not at max-speed distance",
+      stepNum() < 5000, String(stepNum()));
+    check("exactly one event recorded", window.document.querySelectorAll("#events .ev").length === 1,
+      String(window.document.querySelectorAll("#events .ev").length));
+  }
+
+  // ---- regression: the halt badge must vanish on reset (an id-specificity
+  // clash kept display:inline-block above .hidden, so the banner stuck) ----
+  {
+    const css = fs.readFileSync(path.join(root, "style.css"), "utf8");
+    check("style.css: #haltBadge.hidden outranks the badge's own display",
+      /#haltBadge\.hidden\s*{[^}]*display:\s*none/.test(css));
+    click([...window.document.querySelectorAll("#library button")].find((b) => b.dataset.id === "adder"));
+    for (let i = 0; i < 25 && !$("btnStep").disabled; i++) click($("btnStep"));
+    check("adder halted (badge shown)", $("haltBadge").classList.contains("hidden") === false);
+    click($("btnReset"));
+    check("reset hides the halt badge", $("haltBadge").classList.contains("hidden"),
+      $("haltBadge").className);
+  }
+
+  // ---- x-axis label ----
+  {
+    click([...window.document.querySelectorAll("#library button")].find((b) => b.dataset.id === "primegame"));
+    click($("btnStep"));
+    drawn.length = 0;
+    click(window.document.querySelector('#regMode button[data-mode="bars"]'));   // one render
+    const texts = drawn.filter((d) => d[0] === "text").map((d) => d[1]);
+    check("chart draws an x-axis label for the step count",
+      texts.some((t) => /^steps 0 … /.test(t)), JSON.stringify(texts));
+    click(window.document.querySelector('#regMode button[data-mode="chips"]'));
+  }
+
+  // ---- global numbers/factors display toggle ----
+  {
+    click([...window.document.querySelectorAll("#library button")].find((b) => b.dataset.id === "adder"));
+    $("speed").value = "10";
+    click($("btnStep"));                     // n = 2^11 · 3^6
+    click(window.document.querySelector('#dispToggle button[data-disp="factors"]'));
+    check("n shows its factorization",
+      /\^|·/.test($("nValue").textContent) && $("nValue").textContent.includes("2^11"),
+      $("nValue").textContent.slice(0, 60));
+    check("the parsed input shows its factorization",
+      $("inputEcho").textContent.replace(/\s/g, "") === "input=2^12·3^5",
+      $("inputEcho").textContent);
+    check("toggle state is reflected on the buttons",
+      window.document.querySelector('#dispToggle button[data-disp="factors"]').classList.contains("on"));
+    click(window.document.querySelector('#dispToggle button[data-disp="number"]'));
+    check("n shows plain digits again",
+      /\d/.test($("nValue").textContent) && !/·/.test($("nValue").textContent),
+      $("nValue").textContent.slice(0, 40));
+    check("input echo shows the decimal again",
+      $("inputEcho").textContent.includes("995328"), $("inputEcho").textContent);
+    // a composite fraction actually changes: PRIMEGAME's 78/85 -> 2·3·13/5·17
+    click([...window.document.querySelectorAll("#library button")].find((b) => b.dataset.id === "primegame"));
+    click(window.document.querySelector('#dispToggle button[data-disp="factors"]'));
+    const chip = [...window.document.querySelectorAll("#fracstrip .frac")]
+      .find((c) => c.dataset.index === "1");
+    check("fraction strip chips show factorized fractions",
+      chip && chip.textContent.includes("2·3·13/5·17"),
+      chip && chip.textContent);
+    click(window.document.querySelector('#dispToggle button[data-disp="number"]'));
+    const chipRaw = [...window.document.querySelectorAll("#fracstrip .frac")]
+      .find((c) => c.dataset.index === "1");
+    check("fraction strip chips show raw fractions again",
+      chipRaw && chipRaw.textContent.includes("78/85"),
+      chipRaw && chipRaw.textContent);
   }
 
   console.log(`\n${passed} passed, ${failed} failed`);

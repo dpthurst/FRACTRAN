@@ -37,6 +37,8 @@
   let firedQueue = [];     // fraction indices fired since the last render
   const VIEW_QUEUE_CAP = 200000;
   let regMode = "chips";   // "chips" (only nonzero) | "bars" (fixed set, never vanishes)
+  let dispMode = "number"; // "number" (decimal) | "factors" (prime factorization)
+  let inputN0 = null;      // the parsed input of the current run
   let fracStripKey = "";   // cache key: rebuild chips only when the program changes
   let fracChips = [];
   let running = false;
@@ -91,6 +93,7 @@
       st = null; render(); return;
     }
     st = newState(n);
+    inputN0 = n;
     history = []; chart = []; events = []; trace = [];
     displayFact = engine === "arith" ? tryFactor(n) : null;
     displayFactSkipped = false;
@@ -265,6 +268,9 @@
   function render() {
     drainFiredQueue();
     renderLibrary();
+    for (const b of $("dispToggle").querySelectorAll("button")) {
+      b.classList.toggle("on", b.dataset.disp === dispMode);
+    }
     renderFracStrip();
     renderState();
     renderEvents();
@@ -278,10 +284,22 @@
   // the outlined chip is the one that will fire next.  Built once per program
   // (chips are cheap but this runs on every frame at max speed), then only
   // the two highlighted classes change.
+  // Format helpers for the global numbers/factors display toggle.
+  function factorsOfMap(map) {
+    const parts = [];
+    for (const [p, e] of map) parts.push(e === 1 ? `${p}` : `${p}^${e}`);
+    return parts.join("·");
+  }
+  function fracFactorized(f) {
+    const num = factorsOfMap(f.numF) || "1";
+    const den = factorsOfMap(f.denF) || "1";
+    return `${num}/${den}`;
+  }
+
   function renderFracStrip() {
     const strip = $("fracstrip");
     if (!prog || !prog.fractions.length) { strip.innerHTML = ""; fracStripKey = ""; fracChips = []; return; }
-    const key = prog.fractions.map((f) => f.raw).join(",");
+    const key = dispMode + "|" + prog.fractions.map((f) => f.raw).join(",");
     if (key !== fracStripKey) {
       fracStripKey = key;
       strip.innerHTML = "";            // rebuild: chips must not accumulate
@@ -293,8 +311,9 @@
         ix.className = "ix";
         ix.textContent = String(i + 1);
         el.appendChild(ix);
-        el.appendChild(document.createTextNode(f.raw));
+        el.appendChild(document.createTextNode(dispMode === "factors" ? fracFactorized(f) : f.raw));
         el.title = `fraction ${i + 1} of ${prog.fractions.length}: ${f.raw}`
+          + (dispMode === "factors" ? ` = ${f.raw}` : "")
           + (f.line ? ` (editor line ${f.line})` : "");
         strip.appendChild(el);
         return el;
@@ -388,17 +407,29 @@
 
     const big = nOf(st);
     const t = C.nToStringTruncated(big);
-    let html = `<span class="copy" id="copyN" title="copy the full value">copy ${t.digits.toLocaleString("en")} digits</span>`;
-    if (t.tail) {
-      html += `${t.head}<span class="elide"> … [${t.digits.toLocaleString("en")} digits] … </span>${t.tail}`;
+    let html;
+    if (dispMode === "factors") {
+      const fact = viewFact();
+      const s = fact ? factorsOfMap(fact) : null;
+      html = s
+        ? `<span class="copy" id="copyN" title="copy this factorization">copy</span>${s}`
+        : (t.tail
+          ? `${t.head}<span class="elide"> … [${t.digits.toLocaleString("en")} digits] … </span>${t.tail}`
+          : t.head);
     } else {
-      html += t.head;
+      html = `<span class="copy" id="copyN" title="copy the full value">copy ${t.digits.toLocaleString("en")} digits</span>`;
+      if (t.tail) {
+        html += `${t.head}<span class="elide"> … [${t.digits.toLocaleString("en")} digits] … </span>${t.tail}`;
+      } else {
+        html += t.head;
+      }
     }
     $("nValue").innerHTML = html;
     $("nValue").title = big.toString().slice(0, 2000);
     const copyEl = $("copyN");
     if (copyEl) copyEl.addEventListener("click", copyN);
 
+    renderInputEcho();
     renderRegisters();
   }
 
@@ -534,11 +565,12 @@
     // Pure, tested geometry (core.js): every coordinate comes back finite and
     // inside the plot box, whatever the data.  The event values are part of
     // the series for scaling purposes, so the axis always spans them and no
-    // dot is ever clamped onto the edge.
+    // dot is ever clamped onto the edge.  The bottom 14px are reserved for
+    // the x-axis label.
     const pts = chart.concat(
       events.filter((e) => Number.isFinite(e.log10))
             .map((e) => ({ step: e.step, log10: e.log10 })));
-    const geo = C.chartGeometry(pts, w, h, 6);
+    const geo = C.chartGeometry(pts, w, h - 14, 6);
     const clampY = (y) => Math.max(geo.pad, Math.min(h - geo.pad, y));
 
     // y-axis guides carrying the actual values — the vertical position alone
@@ -585,10 +617,33 @@
     }
 
     const cur = chart[chart.length - 1].log10;
+    // x-axis label, centred in the reserved strip
+    ctx.fillStyle = "#9aa5b5";
+    ctx.font = "10px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(`steps 0 … ${geo.maxStep.toLocaleString("en")}`, w / 2, h - 3);
+    ctx.textAlign = "left";
     $("chartNote").textContent = `log₁₀ n = ${cur.toFixed(1)} now · `
-      + `axis ${geo.lo.toFixed(1)} … ${geo.hi.toFixed(1)} · `
-      + `steps 0 … ${geo.maxStep.toLocaleString("en")}`
+      + `axis ${geo.lo.toFixed(1)} … ${geo.hi.toFixed(1)}`
       + (st && st.step >= STEP_GUARD ? " — step guard reached" : "");
+  }
+
+  // The parsed input, in the current display mode: decimal in "numbers",
+  // its prime factorization in "factors".
+  function renderInputEcho() {
+    const el = $("inputEcho");
+    if (inputN0 === null || inputN0 === undefined) { el.textContent = ""; return; }
+    try {
+      if (dispMode === "factors") {
+        el.textContent = "input = " + factorsOfMap(C.factorBig(inputN0));
+      } else {
+        const t = C.nToStringTruncated(inputN0);
+        el.textContent = "input = "
+          + (t.tail ? `${t.head}…[${t.digits} digits]…${t.tail}` : t.head);
+      }
+    } catch (e) {
+      el.textContent = "";
+    }
   }
 
   function renderButtons() {
@@ -630,7 +685,9 @@
 
   function copyN() {
     if (!st) return;
-    const s = nOf(st).toString();
+    const s = dispMode === "factors" && viewFact()
+      ? factorsOfMap(viewFact())
+      : nOf(st).toString();
     const done = () => { $("copyN").textContent = "copied ✓"; };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(s).then(done, () => fallbackCopy(s, done));
@@ -691,7 +748,15 @@
   $("btnBack").addEventListener("click", doBack);
   $("btnReset").addEventListener("click", reset);
   $("btnApply").addEventListener("click", () => { example = null; markActive(); reset(); });
-  $("speed").addEventListener("change", () => { if (running) { stopRun(); startRun(stopAtNextEvent); } });
+  $("speed").addEventListener("change", () => {
+    if (!running) return;
+    // capture BEFORE stopRun: stopRun clears stopAtNextEvent, and the
+    // argument would otherwise be evaluated after it — turning a
+    // "next event" run into a plain run that blows past the event
+    const until = stopAtNextEvent;
+    stopRun();
+    startRun(until);
+  });
 
   for (const b of $("engineToggle").querySelectorAll("button")) {
     b.addEventListener("click", () => {
@@ -700,6 +765,15 @@
         x.classList.toggle("on", x === b);
       }
       reset();               // engines use different state kinds: restart cleanly
+    });
+  }
+
+  // display mode: numbers vs prime factorization everywhere
+  for (const b of $("dispToggle").querySelectorAll("button")) {
+    b.addEventListener("click", () => {
+      dispMode = b.dataset.disp;
+      try { localStorage.setItem("fractran.dispMode", dispMode); } catch (e) { /* private mode */ }
+      render();
     });
   }
 
@@ -727,6 +801,8 @@
   try {
     const saved = localStorage.getItem("fractran.regMode");
     if (saved === "bars" || saved === "chips") regMode = saved;
+    const savedDisp = localStorage.getItem("fractran.dispMode");
+    if (savedDisp === "factors" || savedDisp === "number") dispMode = savedDisp;
   } catch (e) { /* private mode */ }
 
   const m = location.hash.match(/^#example=([a-z0-9_-]+)$/);

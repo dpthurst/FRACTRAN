@@ -41,6 +41,13 @@ html, body {
   padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12px;
 }
 #engineToggle button.on { background: var(--accent2); color: #10202c; font-weight: 600; }
+#dispToggle { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+#dispToggle button {
+  background: transparent; color: var(--dim); border: 0;
+  padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12px;
+}
+#dispToggle button.on { background: var(--accent); color: #241703; font-weight: 600; }
+#inputEcho { font: 11.5px var(--mono); color: var(--dim); min-height: 15px; margin: -4px 0 8px; }
 
 /* ---------- layout ---------- */
 
@@ -135,6 +142,9 @@ label[for="inputN"] { font-size: 11px; text-transform: uppercase; letter-spacing
   border-radius: 4px; padding: 2px 8px; margin-bottom: 6px;
 }
 #haltBadge.running { background: var(--accent2); color: #10202c; }
+/* id-specificity: the badge's own display:inline-block would otherwise
+   outrank .hidden and keep a stale "halted" banner visible after reset */
+#haltBadge.hidden { display: none; }
 .hidden { display: none; }
 
 #fired { font: 12.5px var(--mono); min-height: 18px; color: var(--accent); }
@@ -186,9 +196,9 @@ label[for="inputN"] { font-size: 11px; text-transform: uppercase; letter-spacing
 #registers .barrow .lbl { color: var(--accent2); overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap; }
 #registers .barrow.named .lbl { color: var(--accent); }
-#registers .barrow .track { background: #141a21; border: 1px solid var(--line);
+#registers .barrow .track { display: block; background: #141a21; border: 1px solid var(--line);
   border-radius: 3px; height: 12px; overflow: hidden; }
-#registers .barrow .fill { height: 100%; background: #2f5f86; }
+#registers .barrow .fill { display: block; height: 100%; background: #2f5f86; }
 #registers .barrow.touched .fill { background: var(--accent2); }
 #registers .barrow.touched .lbl { text-decoration: underline; }
 #registers .barrow .val { text-align: right; color: var(--text); }

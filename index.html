@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FRACTRAN playground</title>
-<link rel="stylesheet" href="style.css?v=2026-11-04T19:50Z">
+<link rel="stylesheet" href="style.css?v=2026-11-04T22:33Z">
 </head>
 <body>
 <header id="topbar">
@@ -16,6 +16,12 @@
     the run.">
     <button data-engine="arith" class="on">arithmetic&nbsp;n</button>
     <button data-engine="fact">registers&nbsp;p^e</button>
+  </div>
+  <div id="dispToggle" title="Switch every displayed value between plain numbers
+    and its prime factorization: the fraction strip, the current n, and the
+    parsed input.">
+    <button data-disp="number" class="on">numbers</button>
+    <button data-disp="factors">factors</button>
   </div>
   <div class="tagline">multiply n by the first fraction that keeps it integral;
     halt when none does <span class="cite">(Conway 1987)</span></div>
@@ -35,6 +41,7 @@
       <input id="inputN" spellcheck="false">
       <button id="btnApply" title="re-parse the program and restart from the given n">apply</button>
     </div>
+    <div id="inputEcho" title="the parsed input, in the current display mode"></div>
     <div id="controls">
       <button id="btnStep" title="one step">▶| step</button>
       <button id="btnRun" title="run until halted or stopped">▶ run</button>
@@ -85,11 +92,11 @@
   language for arithmetic</em> (1987). Example sources are named per program;
   every published program here is verified computationally by
   <code>tools/oracle.py</code> (see README).
-  <span id="build" class="build">2026-11-04T19:50Z</span>
+  <span id="build" class="build">2026-11-04T22:33Z</span>
 </footer>
 
-<script src="core.js?v=2026-11-04T19:50Z"></script>
-<script src="examples.js?v=2026-11-04T19:50Z"></script>
-<script src="app.js?v=2026-11-04T19:50Z"></script>
+<script src="core.js?v=2026-11-04T22:33Z"></script>
+<script src="examples.js?v=2026-11-04T22:33Z"></script>
+<script src="app.js?v=2026-11-04T22:33Z"></script>
 </body>
 </html>
