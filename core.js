@@ -72,6 +72,68 @@ const FractranCore = (() => {
   // Accepted program text: fractions "a/b" or integers "a", separated by
   // commas and/or newlines.  "#" or "//" start a comment running to the end
   // of the line.  Fractions are reduced to lowest terms.
+  //
+  // Event specifications are ALSO program text, as a comment directive (one
+  // per program, last wins):
+  //
+  //   # event: pow(2)                  n is a pure power of 2 (k >= 1)
+  //   # event: pow(2*5, min=2)         n = 2^k·5^k for some k >= 2
+  //   # event: halt(5)                 at halt, report the exponent of 5
+  //   # event: halt()                  just the halt
+  //   # event: none                    no interesting events
+  //
+  // anything after "--" on the directive line is a free-text label shown in
+  // the events panel ("# event: pow(2) -- 2^p — p is prime").
+
+  function parseEventDirective(text) {
+    // returns { event, error } — event null when no directive present
+    let found = null;
+    const lines = String(text).split("\n");
+    for (let ln = 0; ln < lines.length; ln++) {
+      let line = lines[ln];
+      const hash = line.indexOf("#");
+      const slash2 = line.indexOf("//");
+      let cut = -1;
+      if (hash >= 0 && (slash2 < 0 || hash < slash2)) cut = hash;
+      else if (slash2 >= 0) cut = slash2;
+      if (cut < 0) continue;
+      const comment = line.slice(cut);
+      const m = comment.match(/^#\s*event:\s*(.+)$/i) || comment.match(/^\/\/\s*event:\s*(.+)$/i);
+      if (!m) continue;
+      let body = m[1].trim();
+      let label = "";
+      const dash = body.indexOf("--");
+      if (dash >= 0) { label = body.slice(dash + 2).trim(); body = body.slice(0, dash).trim(); }
+
+      if (/^none$/i.test(body)) {
+        found = { event: null, label };
+        continue;
+      }
+      let mm = body.match(/^halt\s*\(\s*(\d*)\s*\)$/i);
+      if (mm) {
+        found = { event: mm[1] ? { kind: "halt", outputPrime: mm[1] } : { kind: "halt" }, label };
+        continue;
+      }
+      mm = body.match(/^pow\s*\(\s*([^)]*?)\s*(?:,\s*min\s*=\s*(\d+)\s*)?\)$/i);
+      if (mm && mm[1]) {
+        const monomial = {};
+        let bad = false;
+        for (const part of mm[1].split("*")) {
+          const pp = part.trim().match(/^(\d+)(?:\^(\d+))?$/);
+          if (!pp) { bad = true; break; }
+          const base = pp[1], unit = pp[2] ? parseInt(pp[2], 10) : 1;
+          if (!isPrime(BigInt(base)) || unit < 1) { bad = true; break; }
+          monomial[base] = unit;
+        }
+        if (!bad) {
+          found = { event: { kind: "monomial", monomial, minExp: mm[2] ? parseInt(mm[2], 10) : 1 }, label };
+          continue;
+        }
+      }
+      return { event: null, error: { line: ln + 1, token: comment.trim(), message: "bad event directive (try: # event: pow(2), pow(2*5, min=2), halt(5), none)" } };
+    }
+    return { event: found ? found.event : null, label: found ? found.label : "", error: null };
+  }
 
   function parseProgram(text) {
     const fractions = [];
@@ -100,7 +162,10 @@ const FractranCore = (() => {
         });
       }
     }
-    return { fractions, errors };
+    const ev = parseEventDirective(text);
+    if (ev.error) errors.push(ev.error);
+    if (ev.event && ev.label) ev.event.label = ev.label;
+    return { fractions, errors, event: ev.error ? null : ev.event, eventLabel: ev.label };
   }
 
   // Accepted input text: a decimal integer, or a product of prime powers

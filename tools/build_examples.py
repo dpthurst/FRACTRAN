@@ -298,14 +298,15 @@ EXAMPLES = [
         registers={"2": "output: first power of 2 is 2^(digit of π)", "89": "seed"},
         maxSteps=5000,
         description=(
-            "Conway's 40-fraction π machine. Play from 89 and the FIRST "
-            "power of two in the trajectory is 8 = 2^3 — the initial digit "
-            "of π — after 775 steps (the value Wikipedia documents, and "
-            "what we verify). For later digits the documented input is "
-            "2^d·89 with first power of two 2^π(d); we could not confirm "
-            "any pure power of two within 30 million steps for d = 1, so "
-            "treat the general claim as unverified here and enjoy the d = 0 "
-            "case, which checks out exactly. The transcription itself was "
+            "Conway's 40-fraction π machine. The program carries the event "
+            "spec '# event: pow(2) -- next digit of π', so set the input and "
+            "press 'next event' to stop at the next pure power of two — its "
+            "exponent is the digit. From 89 (digit 0) that is 2^3 after 775 "
+            "steps: verified. For the documented inputs 2^d·89 with d ≥ 1 we "
+            "have NOT been able to reproduce the claim (no pure power of two "
+            "at all within 30 million steps for d = 1; two simulators agree), "
+            "so treat later digits as unverified here — the run will simply "
+            "keep going if no power of two comes. The transcription was "
             "re-checked character by character against the source."
         ),
         source="J. H. Conway, 'FRACTRAN: a simple universal programming language for arithmetic' (1987), Theorem 2; transcribed from Wikipedia (which corrects the input to 2^n·89); verified computationally",
@@ -400,6 +401,29 @@ EXAMPLES = [
 ]
 
 
+def directive_of(event, label):
+    """Render an event spec as a program directive line (see core.js)."""
+    if event is None:
+        body = "none"
+    elif event["kind"] == "halt":
+        body = f"halt({event.get('outputPrime', '')})"
+    else:
+        parts = []
+        for p, unit in event["monomial"].items():
+            parts.append(p if unit == 1 else f"{p}^{unit}")
+        body = "pow(" + "*".join(parts)
+        if event.get("minExp", 1) != 1:
+            body += f", min={event['minExp']}"
+        body += ")"
+    lab = f" -- {label}" if label else ""
+    return f"# event: {body}{lab}"
+
+
+def program_with_directive(ex):
+    """The example's program with its event spec appended as a directive."""
+    return ex["program"].rstrip("\n") + "\n" + directive_of(ex["event"], ex["event"].get("label", ""))
+
+
 def build():
     out = []
     for ex in EXAMPLES:
@@ -408,6 +432,7 @@ def build():
             name = e.pop("machine")
             e["program"] = program_of(name)
             e["registers"] = legend_of(name)
+        e["program"] = program_with_directive(e)
         out.append(e)
     return out
 

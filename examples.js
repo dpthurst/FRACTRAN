@@ -6,7 +6,7 @@ const FRACTRAN_EXAMPLES = [
     "id": "doubler",
     "name": "Doubler",
     "group": "Toys",
-    "program": "2   # the fraction 2/1: n -> 2n, always applicable",
+    "program": "2   # the fraction 2/1: n -> 2n, always applicable\n# event: pow(2) -- 2^k",
     "input": "1",
     "event": {
       "kind": "monomial",
@@ -27,7 +27,7 @@ const FRACTRAN_EXAMPLES = [
     "id": "pingpong",
     "name": "Ping-pong (never halts)",
     "group": "Toys",
-    "program": "3/2   # if n has a 2: swap one 2 for a 3\n2/3   # if n has a 3: swap one 3 for a 2",
+    "program": "3/2   # if n has a 2: swap one 2 for a 3\n2/3   # if n has a 3: swap one 3 for a 2\n# event: pow(3, min=2) -- 3^b (ping)",
     "input": "9",
     "event": {
       "kind": "monomial",
@@ -49,7 +49,7 @@ const FRACTRAN_EXAMPLES = [
     "id": "adder",
     "name": "Addition: 2^a 3^b \u2192 3^(a+b)",
     "group": "Toys",
-    "program": "3/2   # move one unit from register a to register b",
+    "program": "3/2   # move one unit from register a to register b\n# event: halt(3) -- halts at 3^(a+b)",
     "input": "2^12 * 3^5",
     "event": {
       "kind": "halt",
@@ -68,7 +68,7 @@ const FRACTRAN_EXAMPLES = [
     "id": "multiplier",
     "name": "Multiplication: 2^a 3^b \u2192 5^(a\u00b7b)",
     "group": "Published classics",
-    "program": "455/33   # state B: b>0: b--, out++, copy++, secondary flag on\n11/13    # state B: re-arm primary flag\n1/11     # state B: b=0: drop flag, return to state A\n3/7      # state A: restore one unit of b from the copy\n11/2     # state A: a>0: a--, enter state B\n1/3      # state A: drain leftover b, stay in A",
+    "program": "455/33   # state B: b>0: b--, out++, copy++, secondary flag on\n11/13    # state B: re-arm primary flag\n1/11     # state B: b=0: drop flag, return to state A\n3/7      # state A: restore one unit of b from the copy\n11/2     # state A: a>0: a--, enter state B\n1/3      # state A: drain leftover b, stay in A\n# event: halt(5) -- halts at 5^(a\u00b7b)",
     "input": "2^12 * 3^5",
     "event": {
       "kind": "halt",
@@ -91,7 +91,7 @@ const FRACTRAN_EXAMPLES = [
     "id": "divider",
     "name": "Division: 2^n 3^d 11 \u2192 5^q 7^r",
     "group": "Published classics",
-    "program": "91/66    # state A: n>0,d>0: pair off one n and one d into q\n11/13    # state A: re-arm primary flag\n1/33     # state A: d exhausted n-wise, move to state X\n85/11    # state A: quotient unit done, enter state B\n57/119   # state B: restore d from the working copy\n17/19    # state B: re-arm\n11/17    # state B: d restored, back to state A\n1/3      # state X: drain leftover d (the remainder path)",
+    "program": "91/66    # state A: n>0,d>0: pair off one n and one d into q\n11/13    # state A: re-arm primary flag\n1/33     # state A: d exhausted n-wise, move to state X\n85/11    # state A: quotient unit done, enter state B\n57/119   # state B: restore d from the working copy\n17/19    # state B: re-arm\n11/17    # state B: d restored, back to state A\n1/3      # state X: drain leftover d (the remainder path)\n# event: halt(5) -- halts at 5^q \u00b7 7^r",
     "input": "2^47 * 3^5 * 11",
     "event": {
       "kind": "halt",
@@ -116,7 +116,7 @@ const FRACTRAN_EXAMPLES = [
     "id": "hamming",
     "name": "Hamming weight: 2^a \u2192 13^H(a)",
     "group": "Published classics",
-    "program": "33/20    # state A: a>1: peel two 2s into a half-counter\n5/11     # state A: re-arm\n13/10    # state A: a=1: one last 1-bits worth, flag B on\n1/5      # state A: a=0: move on\n2/3      # state B: rebuild a from halves\n10/7     # state B: a walk finished a bit: count it\n7/2      # state B: re-enter the walk",
+    "program": "33/20    # state A: a>1: peel two 2s into a half-counter\n5/11     # state A: re-arm\n13/10    # state A: a=1: one last 1-bits worth, flag B on\n1/5      # state A: a=0: move on\n2/3      # state B: rebuild a from halves\n10/7     # state B: a walk finished a bit: count it\n7/2      # state B: re-enter the walk\n# event: halt(13) -- halts at 13^H(a)",
     "input": "2^27",
     "event": {
       "kind": "halt",
@@ -139,7 +139,7 @@ const FRACTRAN_EXAMPLES = [
     "id": "primegame",
     "name": "PRIMEGAME (Conway)",
     "group": "Published classics",
-    "program": "17/91   78/85   19/51   23/38   29/33   77/29   95/23\n77/19   1/17    11/13   13/11   15/2    1/7     55/1",
+    "program": "17/91   78/85   19/51   23/38   29/33   77/29   95/23\n77/19   1/17    11/13   13/11   15/2    1/7     55/1\n# event: pow(2, min=2) -- 2^p \u2014 p is prime",
     "input": "2",
     "event": {
       "kind": "monomial",
@@ -160,7 +160,7 @@ const FRACTRAN_EXAMPLES = [
     "id": "primegame_variant",
     "name": "PRIMEGAME, faster variant",
     "group": "Published classics",
-    "program": "17/91   78/85   19/51   23/38   29/33   77/29   95/23\n77/19   1/17    11/13   13/11   15/14   15/2    55/1",
+    "program": "17/91   78/85   19/51   23/38   29/33   77/29   95/23\n77/19   1/17    11/13   13/11   15/14   15/2    55/1\n# event: pow(2, min=2) -- 2^p \u2014 p is prime",
     "input": "2",
     "event": {
       "kind": "monomial",
@@ -181,7 +181,7 @@ const FRACTRAN_EXAMPLES = [
     "id": "kilminster",
     "name": "Kilminster's 10-fraction primes",
     "group": "Published classics",
-    "program": "7/3      99/98    13/49    39/35    36/91\n10/143   49/13    7/11     1/2      91/1",
+    "program": "7/3      99/98    13/49    39/35    36/91\n10/143   49/13    7/11     1/2      91/1\n# event: pow(2*5, min=2) -- 10^p \u2014 p is prime",
     "input": "10",
     "event": {
       "kind": "monomial",
@@ -204,7 +204,7 @@ const FRACTRAN_EXAMPLES = [
     "id": "kilminster9",
     "name": "Kilminster's 9-fraction primes (faster)",
     "group": "Published classics",
-    "program": "3/11     847/45   143/6    7/3      10/91\n3/7      36/325   1/2      36/5",
+    "program": "3/11     847/45   143/6    7/3      10/91\n3/7      36/325   1/2      36/5\n# event: pow(2*5, min=2) -- 10^p \u2014 p is prime",
     "input": "10",
     "event": {
       "kind": "monomial",
@@ -227,7 +227,7 @@ const FRACTRAN_EXAMPLES = [
     "id": "multiplier_esolangs",
     "name": "Multiplier (esolangs variant): 2^x 3^y \u2192 5^(xy)",
     "group": "Published classics",
-    "program": "13/21    # state A: pair one y with one copy-unit\n385/13   # state A: emit to output and the copy register\n1/7      # state A: copy drained: one y consumed\n3/11     # state A: re-arm\n7/2      # state B: x>0: x--, start copying y\n1/3      # state B: y=0 path",
+    "program": "13/21    # state A: pair one y with one copy-unit\n385/13   # state A: emit to output and the copy register\n1/7      # state A: copy drained: one y consumed\n3/11     # state A: re-arm\n7/2      # state B: x>0: x--, start copying y\n1/3      # state B: y=0 path\n# event: halt(5) -- halts at 5^(x\u00b7y)",
     "input": "2^12 * 3^5",
     "event": {
       "kind": "halt",
@@ -250,7 +250,7 @@ const FRACTRAN_EXAMPLES = [
     "id": "pigame",
     "name": "PIGAME (Conway): digits of \u03c0",
     "group": "Published classics",
-    "program": "365/46   29/161   79/575   679/451   3159/413  83/407\n473/371  638/355  434/335  89/235    17/209    79/122\n31/183   41/115   517/89   111/83    305/79    23/73\n73/71    61/67    37/61    19/59     89/57     41/53\n833/47   53/43    86/41    13/38     23/37     67/31\n71/29    83/19    475/17   59/13     41/291    1/7\n1/11     1/1024   1/97     89/1",
+    "program": "365/46   29/161   79/575   679/451   3159/413  83/407\n473/371  638/355  434/335  89/235    17/209    79/122\n31/183   41/115   517/89   111/83    305/79    23/73\n73/71    61/67    37/61    19/59     89/57     41/53\n833/47   53/43    86/41    13/38     23/37     67/31\n71/29    83/19    475/17   59/13     41/291    1/7\n1/11     1/1024   1/97     89/1\n# event: pow(2) -- 2^d \u2014 the next digit of \u03c0",
     "input": "89",
     "event": {
       "kind": "monomial",
@@ -265,7 +265,7 @@ const FRACTRAN_EXAMPLES = [
       "89": "seed"
     },
     "maxSteps": 5000,
-    "description": "Conway's 40-fraction \u03c0 machine. Play from 89 and the FIRST power of two in the trajectory is 8 = 2^3 \u2014 the initial digit of \u03c0 \u2014 after 775 steps (the value Wikipedia documents, and what we verify). For later digits the documented input is 2^d\u00b789 with first power of two 2^\u03c0(d); we could not confirm any pure power of two within 30 million steps for d = 1, so treat the general claim as unverified here and enjoy the d = 0 case, which checks out exactly. The transcription itself was re-checked character by character against the source.",
+    "description": "Conway's 40-fraction \u03c0 machine. The program carries the event spec '# event: pow(2) -- next digit of \u03c0', so set the input and press 'next event' to stop at the next pure power of two \u2014 its exponent is the digit. From 89 (digit 0) that is 2^3 after 775 steps: verified. For the documented inputs 2^d\u00b789 with d \u2265 1 we have NOT been able to reproduce the claim (no pure power of two at all within 30 million steps for d = 1; two simulators agree), so treat later digits as unverified here \u2014 the run will simply keep going if no power of two comes. The transcription was re-checked character by character against the source.",
     "source": "J. H. Conway, 'FRACTRAN: a simple universal programming language for arithmetic' (1987), Theorem 2; transcribed from Wikipedia (which corrects the input to 2^n\u00b789); verified computationally"
   },
   {
@@ -281,7 +281,7 @@ const FRACTRAN_EXAMPLES = [
     "maxSteps": 100000,
     "description": "Euclid by repeated subtraction, compiled from a register machine by tools/compile_minsky.py: drain a and b in lockstep counting the min; when one hits zero, restore it from the count and continue; when both hit zero, the count is the gcd. Every fraction below is one machine instruction (the comments name it); the final n is a pure register product.",
     "source": "generated by tools/compile_minsky.py (this repository); verified as plain FRACTRAN by tools/oracle.py against math.gcd",
-    "program": "13/22  # TST a -> L1 / AZ\n34/13  #   ... restore a\n19/11  #   ... AZ if a = 0\n23/51  # TST b -> ST / BZ\n87/23  #   ... restore b\n31/17  #   ... BZ if b = 0\n37/58  # DEC a -> ST2 / AZ\n19/29  #   ... AZ if a = 0\n41/111  # DEC b -> ST3 / BZ\n31/37  #   ... BZ if b = 0\n77/41  # INC s -> LOOP\n43/57  # TST b -> AR / EQ\n141/43  #   ... restore b\n53/19  #   ... EQ if b = 0\n59/47  # MOVE s -> a -> LOOP: enter loop\n61/413  #   ... take one from s\n11/59  #   ... done, -> LOOP\n118/61  #   ... a += 1\n67/31  # MOVE s -> b -> LOOP: enter loop\n71/469  #   ... take one from s\n11/67  #   ... done, -> LOOP\n201/71  #   ... b += 1\n73/53  # MOVE s -> out -> HALT: enter loop\n79/511  #   ... take one from s\n83/73  #   ... done, -> HALT\n365/79  #   ... out += 1\n1/83  # HALT cleanup: drop state prime 83 (HALT)",
+    "program": "13/22  # TST a -> L1 / AZ\n34/13  #   ... restore a\n19/11  #   ... AZ if a = 0\n23/51  # TST b -> ST / BZ\n87/23  #   ... restore b\n31/17  #   ... BZ if b = 0\n37/58  # DEC a -> ST2 / AZ\n19/29  #   ... AZ if a = 0\n41/111  # DEC b -> ST3 / BZ\n31/37  #   ... BZ if b = 0\n77/41  # INC s -> LOOP\n43/57  # TST b -> AR / EQ\n141/43  #   ... restore b\n53/19  #   ... EQ if b = 0\n59/47  # MOVE s -> a -> LOOP: enter loop\n61/413  #   ... take one from s\n11/59  #   ... done, -> LOOP\n118/61  #   ... a += 1\n67/31  # MOVE s -> b -> LOOP: enter loop\n71/469  #   ... take one from s\n11/67  #   ... done, -> LOOP\n201/71  #   ... b += 1\n73/53  # MOVE s -> out -> HALT: enter loop\n79/511  #   ... take one from s\n83/73  #   ... done, -> HALT\n365/79  #   ... out += 1\n1/83  # HALT cleanup: drop state prime 83 (HALT)\n# event: halt(5) -- halts with 5^gcd(a,b)",
     "registers": {
       "2": "input a",
       "3": "input b",
@@ -321,7 +321,7 @@ const FRACTRAN_EXAMPLES = [
     "maxSteps": 10000,
     "description": "F_k by k-fold application of (a,b) \u2190 (b, a+b), compiled from a register machine. Register b starts at 1 (the machine sets it itself); with input 17\u00b72^k the run halts with the exponent of 13 equal to F_k and 5^F_(k+1) left over. F_0 = 0, F_1 = 1.",
     "source": "generated by tools/compile_minsky.py; verified by tools/oracle.py against direct Fibonacci arithmetic",
-    "program": "19/85  # TST b -> MAIN / SB\n115/19  #   ... restore b\n29/17  #   ... SB if b = 0\n115/29  # INC b -> MAIN\n31/46  # DEC k -> IT / FIN\n37/23  #   ... FIN if k = 0\n41/31  # MOVE a -> t -> IB: enter loop\n43/123  #   ... take one from a\n47/41  #   ... done, -> IB\n287/43  #   ... t += 1\n53/47  # COPY2 b -> a,c -> IT2: enter loop\n59/265  #   ... take one from b\n67/53  #   ... done, -> IT2\n183/59  #   ... a += 1\n583/61  #   ... c += 1\n71/67  # MOVE t -> b -> IC: enter loop\n73/497  #   ... take one from t\n79/71  #   ... done, -> IC\n355/73  #   ... b += 1\n83/79  # MOVE c -> b -> MAIN: enter loop\n89/913  #   ... take one from c\n23/83  #   ... done, -> MAIN\n415/89  #   ... b += 1\n97/37  # MOVE a -> out -> HALT: enter loop\n101/291  #   ... take one from a\n103/97  #   ... done, -> HALT\n1261/101  #   ... out += 1\n1/103  # HALT cleanup: drop state prime 103 (HALT)",
+    "program": "19/85  # TST b -> MAIN / SB\n115/19  #   ... restore b\n29/17  #   ... SB if b = 0\n115/29  # INC b -> MAIN\n31/46  # DEC k -> IT / FIN\n37/23  #   ... FIN if k = 0\n41/31  # MOVE a -> t -> IB: enter loop\n43/123  #   ... take one from a\n47/41  #   ... done, -> IB\n287/43  #   ... t += 1\n53/47  # COPY2 b -> a,c -> IT2: enter loop\n59/265  #   ... take one from b\n67/53  #   ... done, -> IT2\n183/59  #   ... a += 1\n583/61  #   ... c += 1\n71/67  # MOVE t -> b -> IC: enter loop\n73/497  #   ... take one from t\n79/71  #   ... done, -> IC\n355/73  #   ... b += 1\n83/79  # MOVE c -> b -> MAIN: enter loop\n89/913  #   ... take one from c\n23/83  #   ... done, -> MAIN\n415/89  #   ... b += 1\n97/37  # MOVE a -> out -> HALT: enter loop\n101/291  #   ... take one from a\n103/97  #   ... done, -> HALT\n1261/101  #   ... out += 1\n1/103  # HALT cleanup: drop state prime 103 (HALT)\n# event: halt(13) -- halts with 13^F_k",
     "registers": {
       "2": "input k",
       "3": "F_i (output at halt)",
@@ -365,7 +365,7 @@ const FRACTRAN_EXAMPLES = [
     "maxSteps": 200000,
     "description": "k! as a consuming multiply: burn the accumulator down unit by unit, adding k to the result for each unit, then move the result back and decrement k. Compiled from a register machine; 6! = 720 takes about 33,000 FRACTRAN steps \u2014 watch the chart climb as the product register grows.",
     "source": "generated by tools/compile_minsky.py; verified by tools/oracle.py against direct factorial arithmetic",
-    "program": "19/51  # TST p -> MAIN / IP\n69/19  #   ... restore p\n29/17  #   ... IP if p = 0\n69/29  # INC p -> MAIN\n31/46  # TST k -> MOUT / FIN\n74/31  #   ... restore k\n41/23  #   ... FIN if k = 0\n43/111  # TST p -> M1 / MEND\n141/43  #   ... restore p\n53/37  #   ... MEND if p = 0\n59/141  # DEC p -> M2 / MEND\n53/47  #   ... MEND if p = 0\n61/59  # COPY2 k -> k2,k3 -> M3: enter loop\n67/122  #   ... take one from k\n73/61  #   ... done, -> M3\n497/67  #   ... k2 += 1\n671/71  #   ... k3 += 1\n79/511  # TST k2 -> M4 / M6\n581/79  #   ... restore k2\n89/73  #   ... M6 if k2 = 0\n97/581  # DEC k2 -> M5 / M6\n89/83  #   ... M6 if k2 = 0\n365/97  # INC q -> M3\n101/89  # MOVE k3 -> k -> MOUT: enter loop\n103/1111  #   ... take one from k3\n37/101  #   ... done, -> MOUT\n202/103  #   ... k += 1\n107/53  # MOVE q -> p -> MDEC: enter loop\n109/535  #   ... take one from q\n113/107  #   ... done, -> MDEC\n321/109  #   ... p += 1\n23/226  # DEC k -> MAIN / FIN\n41/113  #   ... FIN if k = 0\n127/41  # MOVE p -> out -> HALT: enter loop\n131/381  #   ... take one from p\n137/127  #   ... done, -> HALT\n1651/131  #   ... out += 1\n1/137  # HALT cleanup: drop state prime 137 (HALT)",
+    "program": "19/51  # TST p -> MAIN / IP\n69/19  #   ... restore p\n29/17  #   ... IP if p = 0\n69/29  # INC p -> MAIN\n31/46  # TST k -> MOUT / FIN\n74/31  #   ... restore k\n41/23  #   ... FIN if k = 0\n43/111  # TST p -> M1 / MEND\n141/43  #   ... restore p\n53/37  #   ... MEND if p = 0\n59/141  # DEC p -> M2 / MEND\n53/47  #   ... MEND if p = 0\n61/59  # COPY2 k -> k2,k3 -> M3: enter loop\n67/122  #   ... take one from k\n73/61  #   ... done, -> M3\n497/67  #   ... k2 += 1\n671/71  #   ... k3 += 1\n79/511  # TST k2 -> M4 / M6\n581/79  #   ... restore k2\n89/73  #   ... M6 if k2 = 0\n97/581  # DEC k2 -> M5 / M6\n89/83  #   ... M6 if k2 = 0\n365/97  # INC q -> M3\n101/89  # MOVE k3 -> k -> MOUT: enter loop\n103/1111  #   ... take one from k3\n37/101  #   ... done, -> MOUT\n202/103  #   ... k += 1\n107/53  # MOVE q -> p -> MDEC: enter loop\n109/535  #   ... take one from q\n113/107  #   ... done, -> MDEC\n321/109  #   ... p += 1\n23/226  # DEC k -> MAIN / FIN\n41/113  #   ... FIN if k = 0\n127/41  # MOVE p -> out -> HALT: enter loop\n131/381  #   ... take one from p\n137/127  #   ... done, -> HALT\n1651/131  #   ... out += 1\n1/137  # HALT cleanup: drop state prime 137 (HALT)\n# event: halt(13) -- halts with 13^(k!)",
     "registers": {
       "2": "input k",
       "3": "running product (= k! at halt)",
@@ -415,7 +415,7 @@ const FRACTRAN_EXAMPLES = [
     "maxSteps": 50000,
     "description": "floor(sqrt n) by the odd-number method: subtract 1, 3, 5, \u2026 from n until you cannot; the number of subtractions is the root. Compiled from a register machine (the lockstep compare restores whichever of r/o survives). Input 17\u00b72^n; output exponent of 13; the last odd tried is left over.",
     "source": "generated by tools/compile_minsky.py; verified by tools/oracle.py against math.isqrt",
-    "program": "19/17  # MOVE n -> r -> INIT2: enter loop\n23/38  #   ... take one from n\n29/19  #   ... done, -> INIT2\n133/23  #   ... r += 1\n31/145  # TST o -> MAIN / SO\n185/31  #   ... restore o\n41/29  #   ... SO if o = 0\n185/41  # INC o -> MAIN\n43/259  # TST r -> C1 / RLOW\n329/43  #   ... restore r\n53/37  #   ... RLOW if r = 0\n59/235  # TST o -> C2 / ITER\n305/59  #   ... restore o\n67/47  #   ... ITER if o = 0\n71/427  # DEC r -> C3 / RLOW\n53/61  #   ... RLOW if r = 0\n73/355  # DEC o -> C4 / ITER\n67/71  #   ... ITER if o = 0\n407/73  # INC w -> MAIN\n79/265  # TST o -> DONE / ITER\n415/79  #   ... restore o\n67/53  #   ... ITER if o = 0\n89/67  # MOVE w -> o -> ITER2: enter loop\n97/979  #   ... take one from w\n101/89  #   ... done, -> ITER2\n445/97  #   ... o += 1\n309/101  # INC s -> ITER3\n535/103  # INC o -> ITER4\n185/107  # INC o -> MAIN\n109/83  # MOVE w -> o -> DONE2: enter loop\n113/1199  #   ... take one from w\n127/109  #   ... done, -> DONE2\n545/113  #   ... o += 1\n131/127  # MOVE s -> out -> HALT: enter loop\n137/393  #   ... take one from s\n139/131  #   ... done, -> HALT\n1703/137  #   ... out += 1\n1/139  # HALT cleanup: drop state prime 139 (HALT)",
+    "program": "19/17  # MOVE n -> r -> INIT2: enter loop\n23/38  #   ... take one from n\n29/19  #   ... done, -> INIT2\n133/23  #   ... r += 1\n31/145  # TST o -> MAIN / SO\n185/31  #   ... restore o\n41/29  #   ... SO if o = 0\n185/41  # INC o -> MAIN\n43/259  # TST r -> C1 / RLOW\n329/43  #   ... restore r\n53/37  #   ... RLOW if r = 0\n59/235  # TST o -> C2 / ITER\n305/59  #   ... restore o\n67/47  #   ... ITER if o = 0\n71/427  # DEC r -> C3 / RLOW\n53/61  #   ... RLOW if r = 0\n73/355  # DEC o -> C4 / ITER\n67/71  #   ... ITER if o = 0\n407/73  # INC w -> MAIN\n79/265  # TST o -> DONE / ITER\n415/79  #   ... restore o\n67/53  #   ... ITER if o = 0\n89/67  # MOVE w -> o -> ITER2: enter loop\n97/979  #   ... take one from w\n101/89  #   ... done, -> ITER2\n445/97  #   ... o += 1\n309/101  # INC s -> ITER3\n535/103  # INC o -> ITER4\n185/107  # INC o -> MAIN\n109/83  # MOVE w -> o -> DONE2: enter loop\n113/1199  #   ... take one from w\n127/109  #   ... done, -> DONE2\n545/113  #   ... o += 1\n131/127  # MOVE s -> out -> HALT: enter loop\n137/393  #   ... take one from s\n139/131  #   ... done, -> HALT\n1703/137  #   ... out += 1\n1/139  # HALT cleanup: drop state prime 139 (HALT)\n# event: halt(13) -- halts with 13^\u230a\u221an\u230b",
     "registers": {
       "2": "input n (drained into r)",
       "3": "root so far (0 at halt)",
@@ -466,7 +466,7 @@ const FRACTRAN_EXAMPLES = [
     "maxSteps": 1000000,
     "description": "The number of Collatz steps from n down to 1 (n = 27 needs 111 steps \u2014 and about half a million FRACTRAN steps, since everything here is unary arithmetic on prime exponents: parity by draining by twos, 3n+1 by copying and tripling). A demonstration that FRACTRAN is a real computer, not a toy.",
     "source": "generated by tools/compile_minsky.py; verified by tools/oracle.py against direct Collatz iteration",
-    "program": "23/38  # TST n -> CK1 / FIN\n58/23  #   ... restore n\n31/19  #   ... FIN if n = 0\n37/58  # DEC n -> CK1b / FIN\n31/29  #   ... FIN if n = 0\n41/74  # TST n -> CK2 / WAS1\n86/41  #   ... restore n\n47/37  #   ... WAS1 if n = 0\n106/43  # INC n -> PAR\n62/47  # INC n -> FIN\n59/106  # DEC n -> P1 / EVN\n61/53  #   ... EVN if n = 0\n67/118  # DEC n -> P2 / ODD\n71/59  #   ... ODD if n = 0\n265/67  # INC h -> PAR\n73/61  # MOVE h -> n -> ES: enter loop\n79/365  #   ... take one from h\n83/73  #   ... done, -> ES\n146/79  #   ... n += 1\n57/83  # INC s -> MAIN\n89/71  # COPY2 h -> n,w -> O2: enter loop\n97/445  #   ... take one from h\n103/89  #   ... done, -> O2\n202/97  #   ... n += 1\n1157/101  #   ... w += 1\n107/103  # MOVE w -> n -> O3: enter loop\n109/1391  #   ... take one from w\n113/107  #   ... done, -> O3\n214/109  #   ... n += 1\n254/113  # INC n -> O4\n131/127  # MOVE n -> t -> O5: enter loop\n137/262  #   ... take one from n\n139/131  #   ... done, -> O5\n917/137  #   ... t += 1\n149/139  # COPY2 t -> n,u -> O6: enter loop\n151/1043  #   ... take one from t\n163/149  #   ... done, -> O6\n314/151  #   ... n += 1\n1639/157  #   ... u += 1\n167/163  # COPY2 u -> n,w -> O7: enter loop\n173/1837  #   ... take one from u\n181/167  #   ... done, -> O7\n358/173  #   ... n += 1\n2171/179  #   ... w += 1\n191/181  # MOVE w -> n -> O8: enter loop\n193/2483  #   ... take one from w\n197/191  #   ... done, -> O8\n382/193  #   ... n += 1\n398/197  # INC n -> OS\n57/199  # INC s -> MAIN\n211/31  # MOVE s -> out -> HALT: enter loop\n223/633  #   ... take one from s\n227/211  #   ... done, -> HALT\n3587/223  #   ... out += 1\n1/227  # HALT cleanup: drop state prime 227 (HALT)",
+    "program": "23/38  # TST n -> CK1 / FIN\n58/23  #   ... restore n\n31/19  #   ... FIN if n = 0\n37/58  # DEC n -> CK1b / FIN\n31/29  #   ... FIN if n = 0\n41/74  # TST n -> CK2 / WAS1\n86/41  #   ... restore n\n47/37  #   ... WAS1 if n = 0\n106/43  # INC n -> PAR\n62/47  # INC n -> FIN\n59/106  # DEC n -> P1 / EVN\n61/53  #   ... EVN if n = 0\n67/118  # DEC n -> P2 / ODD\n71/59  #   ... ODD if n = 0\n265/67  # INC h -> PAR\n73/61  # MOVE h -> n -> ES: enter loop\n79/365  #   ... take one from h\n83/73  #   ... done, -> ES\n146/79  #   ... n += 1\n57/83  # INC s -> MAIN\n89/71  # COPY2 h -> n,w -> O2: enter loop\n97/445  #   ... take one from h\n103/89  #   ... done, -> O2\n202/97  #   ... n += 1\n1157/101  #   ... w += 1\n107/103  # MOVE w -> n -> O3: enter loop\n109/1391  #   ... take one from w\n113/107  #   ... done, -> O3\n214/109  #   ... n += 1\n254/113  # INC n -> O4\n131/127  # MOVE n -> t -> O5: enter loop\n137/262  #   ... take one from n\n139/131  #   ... done, -> O5\n917/137  #   ... t += 1\n149/139  # COPY2 t -> n,u -> O6: enter loop\n151/1043  #   ... take one from t\n163/149  #   ... done, -> O6\n314/151  #   ... n += 1\n1639/157  #   ... u += 1\n167/163  # COPY2 u -> n,w -> O7: enter loop\n173/1837  #   ... take one from u\n181/167  #   ... done, -> O7\n358/173  #   ... n += 1\n2171/179  #   ... w += 1\n191/181  # MOVE w -> n -> O8: enter loop\n193/2483  #   ... take one from w\n197/191  #   ... done, -> O8\n382/193  #   ... n += 1\n398/197  # INC n -> OS\n57/199  # INC s -> MAIN\n211/31  # MOVE s -> out -> HALT: enter loop\n223/633  #   ... take one from s\n227/211  #   ... done, -> HALT\n3587/223  #   ... out += 1\n1/227  # HALT cleanup: drop state prime 227 (HALT)\n# event: halt(17) -- halts with 17^(steps to 1)",
     "registers": {
       "2": "input n (1 at halt)",
       "3": "steps taken",

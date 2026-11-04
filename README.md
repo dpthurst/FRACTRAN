@@ -27,12 +27,24 @@ python3 -m http.server 8000     # then http://localhost:8000
   decoded outputs for the machines, …).
 - **Program + input (middle):** edit the fractions; input is a decimal
   integer or a product of prime powers such as `2^12 * 3^5`. `#` and `//`
-  start comments. "apply" re-parses and restarts, and the line under the
-  input echoes the parsed input in the current display mode (decimal, or its
-  prime factorization). Under the editor, the **fraction strip** shows the
-  program as chips — in the current display mode, so `78/85` reads
-  `2·3·13/5·17` in factors mode — with the amber chip marking the fraction
-  that just fired and the outlined chip the one that will fire next.
+  start comments, and an **event specification is a comment too**:
+
+```
+# event: pow(2)                n is a pure power of two (k >= 1)
+# event: pow(2*5, min=2)       n = 2^k·5^k for some k >= 2
+# event: halt(5)               at halt, report the exponent of 5
+# event: none                  no highlighted events
+```
+
+  anything after `--` is a label shown in the events panel. The spec drives
+  the orange chart dots and the **⏭ next event** button, which stops the run
+  *on* the event state. Every example's spec is written this way — look at
+  PRIMEGAME's last line. "apply" re-parses program, input and event.
+
+  Under the editor, the **fraction strip** shows the program as chips — in
+  the current display mode, so `78/85` reads `2·3·13/5·17` in factors mode —
+  with the amber chip marking the fraction that just fired and the outlined
+  chip the one that will fire next.
 - **Controls:** step / run / back / next-event / reset, at 10 → max steps
   per second (space = run/pause, ←/→ = back/step).
 - **State (right):** the fraction that fired, `n` itself (copy button for the

@@ -65,7 +65,7 @@
 
   // ---------------- event specification ----------------
 
-  function eventSpec() { return example ? example.event : null; }
+  function eventSpec() { return prog ? prog.event : null; }
 
   // ---------------- parsing / (re)start ----------------
 
@@ -146,12 +146,15 @@
     };
   }
 
-  function stepOnce() {
+  function stepOnce(stopBeforeEvent) {
     if (!st || st.halted) return false;
     const spec = eventSpec();
     if (spec && spec.kind === "monomial") {
       const ev = evalEventHere(spec);
-      if (ev.fire) recordEvent(st.step, ev, spec);
+      if (ev.fire) {
+        recordEvent(st.step, ev, spec);
+        if (stopBeforeEvent) return "event";   // stop AT the event state
+      }
     }
     if (chart.length === 0 || chart[chart.length - 1].step !== st.step) {
       chart.push({ step: st.step, log10: C.log10Approx(nOf(st)) });
@@ -210,11 +213,10 @@
 
     while (true) {
       if (!st || st.halted || st.step >= STEP_GUARD) break;
-      const firedBefore = events.length;
-      stepOnce();
+      const r = stepOnce(stopAtNextEvent);
+      if (r === "event") break;            // parked on the event state itself
       appended++;
       if (appended % logEvery === 0) pushTrace();
-      if (events.length > firedBefore && stopAtNextEvent) break;
       if (speed.perTick !== Infinity) {
         if (appended >= speed.perTick) break;
       } else if (performance.now() - t0 > 12) {
@@ -225,7 +227,7 @@
     render();
 
     const stopped = !st || st.halted || st.step >= STEP_GUARD
-      || (stopAtNextEvent && events.length > 0 && appended > 0 && events.length > (eventsAtLoopStart || 0));
+      || (stopAtNextEvent && events.length > (eventsAtLoopStart || 0));
     if (!stopped && running) {
       timer = setTimeout(tick, speed.delay);
     } else {
@@ -513,11 +515,21 @@
     box.innerHTML = html;
   }
 
+  function specDirectiveText(spec) {
+    if (spec.kind === "halt") return spec.outputPrime ? `halt: exponent of ${spec.outputPrime}` : "halt";
+    const mon = Object.entries(spec.monomial).map(([p, u]) => (u === 1 ? p : `${p}^${u}`)).join("·");
+    return `pure powers of ${mon} (k ≥ ${spec.minExp || 1})`;
+  }
+
   function renderEvents() {
     const box = $("events");
+    const spec = eventSpec();
+    $("eventsSpec").textContent = spec
+      ? (spec.label || specDirectiveText(spec))
+      : 'none — add a line like "# event: pow(2)" to the program';
     if (!events.length) {
-      box.innerHTML = '<span class="none">none yet — events are marked per example '
-        + '(pure powers of two, halts with a decoded output, …)</span>';
+      box.innerHTML = '<span class="none">none yet'
+        + (spec ? "" : " — no event spec") + "</span>";
       return;
     }
     const rows = events.slice(-60).reverse().map((e) => {

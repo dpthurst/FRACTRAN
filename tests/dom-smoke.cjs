@@ -386,6 +386,48 @@ function check(label, cond, detail) {
       chipRaw && chipRaw.textContent);
   }
 
+  // ---- event specifications live in the program text ----
+  {
+    // a custom program with its own directive: the doubler, stopping at 2^3
+    $("program").value = "2\n# event: pow(2, min=3) -- first power of two >= 2^3";
+    $("inputN").value = "1";
+    $("speed").value = "max";
+    click($("btnApply"));
+    check("custom event directive parses without errors",
+      $("program-errors").textContent === "", $("program-errors").textContent);
+    check("events header shows the parsed spec",
+      $("eventsSpec").textContent.includes("first power of two"), $("eventsSpec").textContent);
+    check("next event is enabled with a directive", $("btnNext").disabled === false);
+    click($("btnNext"));
+    await sleep(120);
+    check("next event stopped at 2^3 (step 3)",
+      stepNum() === 3 && !$("btnRun").textContent.includes("pause"),
+      `step ${stepNum()}, label ${$("btnRun").textContent}`);
+    check("the event fired with value 3",
+      $("events").textContent.includes("= 3"), $("events").textContent.slice(0, 60));
+
+    // a malformed directive is a visible parse error
+    $("program").value = "2\n# event: wat";
+    click($("btnApply"));
+    check("malformed event directive is a visible error",
+      $("program-errors").textContent.includes("bad event directive"),
+      $("program-errors").textContent);
+  }
+
+  // ---- PIGAME with the documented digit input: next event = next power of 2 ----
+  {
+    click([...window.document.querySelectorAll("#library button")].find((b) => b.dataset.id === "pigame"));
+    $("inputN").value = "89";          // d = 0: verified to stop at 2^3, step 775
+    $("speed").value = "max";
+    click($("btnNext"));
+    const t0 = Date.now();
+    while (Date.now() - t0 < 8000 && !$("btnRun").textContent.includes("run")) await sleep(50);
+    check("PIGAME from 89: next event stops at the first power of 2",
+      stepNum() === 775, `step ${stepNum()}`);
+    check("PIGAME event decodes the digit", $("events").textContent.includes("= 3"),
+      $("events").textContent.slice(0, 60));
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);
 })().catch((e) => { console.log("FAIL smoke crashed: " + (e && e.stack || e)); process.exit(1); });

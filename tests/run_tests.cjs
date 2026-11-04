@@ -245,6 +245,17 @@ check("parse: reduces 22/6 to 11/3", (() => {
     C.nextFiredIndex(pg, fst) === C.nextFiredIndex(pg, C.newArithState(2n)));
 }
 
+// ---------------- event directives: parsed spec must equal the metadata ----
+
+for (const ex of EXAMPLES) {
+  const parsed = C.parseProgram(ex.program).event || null;
+  const want = ex.event || null;
+  const norm = (e) => e === null ? "null"
+    : JSON.stringify(Object.keys(e).sort().map((k) => [k, e[k]]));
+  check(`${ex.id}: program's event directive equals its metadata`,
+    norm(parsed) === norm(want), `parsed=${norm(parsed)} want=${norm(want)}`);
+}
+
 // ---------------- summary ----------------
 
 console.log(`\n${passed} passed, ${failed} failed`);

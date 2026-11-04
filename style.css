@@ -159,6 +159,8 @@ label[for="inputN"] { font-size: 11px; text-transform: uppercase; letter-spacing
 .nbox .elide { color: var(--dim); }
 .nbox .copy { float: right; cursor: pointer; color: var(--accent2); font-size: 11px; }
 
+.pane-sub span { text-transform: none; letter-spacing: 0; color: var(--text); font-size: 11px; }
+
 /* ---------- fraction strip (which fraction fired) ---------- */
 
 #fracstrip {
