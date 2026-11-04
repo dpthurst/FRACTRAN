@@ -32,7 +32,8 @@ def main():
     with open(PATH, encoding="utf-8") as fh:
         html = fh.read()
 
-    # version every local asset reference (never external URLs)
+    # version every local asset reference (never external URLs); an existing
+    # ?v=... query is replaced, not doubled
     def version(match):
         attr, path = match.group(1), match.group(2)
         if path.startswith("http") or path.startswith("//"):
@@ -40,7 +41,8 @@ def main():
         base = path.split("?")[0]
         return f'{attr}="{base}?v={stamp}"'
 
-    html, n_assets = re.subn(r'(src|href)="([^"]+\.(?:js|css))"', version, html)
+    html, n_assets = re.subn(
+        r'(src|href)="([^"?]+\.(?:js|css))(?:\?[^"]*)?"', version, html)
     html, n_stamp = re.subn(
         r'(<span id="build"[^>]*>)[^<]*(</span>)',
         r'\g<1>' + stamp + r'\g<2>', html)
