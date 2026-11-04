@@ -100,8 +100,9 @@ computationally — see below):
   for digit $k$ (Kaushik–Murphy–Weed, arXiv:2412.16185; Conway's paper
   wrote $2^n$, dropping the $\cdot 89$), and the OEIS record shows the
   *second* digit taking more than $10^6$ steps with 150,000-digit
-  intermediates; our own search exceeded $3\times 10^8$ steps for
-  $89\cdot 2^1$ without reaching $2^1$. No published step count exists
+  intermediates; our own searches exceeded $3\times 10^8$ steps for each
+  of the seeds $89\cdot 2^1$ and $89\cdot 2^2$ without reaching a power
+  of two. No published step count exists
   beyond the first digit — the app says so rather than implying otherwise.
 - Conway's multiplier and the quotient/remainder program (Wikipedia's
   "Creating simple programs"), John Baez's Hamming-weight program, and the

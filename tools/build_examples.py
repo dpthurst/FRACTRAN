@@ -307,8 +307,9 @@ EXAMPLES = [
             "Be warned: the FIRST digit is the cheap one. The OEIS record "
             "(A399511, trajectory from 1) reaches 10^6 steps on the next "
             "digit without a power of two appearing, with intermediates of "
-            "150,000+ digits, and our own search exceeded 3·10^8 steps for "
-            "seed 89·2^1 — no published step count exists for later digits. "
+            "150,000+ digits, and our own searches exceeded 3·10^8 steps "
+            "for each of the seeds 89·2^1 and 89·2^2 — no published step "
+            "count exists for later digits. "
             "Our simulation matches the OEIS trajectory for all 1001 "
             "published values."
         ),
