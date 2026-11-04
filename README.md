@@ -14,6 +14,13 @@ python3 -m http.server 8000     # then http://localhost:8000
 
 ## Using it
 
+> **After each update, force-reload the live page** (Ctrl/Cmd+Shift+R), or
+> wait ten minutes: GitHub Pages serves every file with
+> `cache-control: max-age=600`, so a normal reload can keep running the old
+> scripts. The build id in the footer tells you which version you are on;
+> `python3 tools/stamp.py` writes it (and versioned asset URLs) before each
+> commit.
+
 - **Library (left):** seventeen examples in three groups — toys, published
   classics, and programs compiled from register machines. Each carries its
   source and its "interesting event" (pure powers of two for PRIMEGAME,

@@ -184,6 +184,9 @@ label[for="inputN"] { font-size: 11px; text-transform: uppercase; letter-spacing
   padding: 4px 18px 16px; max-width: 1500px;
 }
 #colophon code { color: var(--accent2); }
+#colophon .build { display: inline-block; margin-left: 8px; color: var(--dim);
+  border: 1px solid var(--line); border-radius: 4px; padding: 0 6px;
+  font: 11px var(--mono); }
 
 @media (max-width: 980px) {
   #layout {
