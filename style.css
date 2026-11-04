@@ -149,7 +149,52 @@ label[for="inputN"] { font-size: 11px; text-transform: uppercase; letter-spacing
 .nbox .elide { color: var(--dim); }
 .nbox .copy { float: right; cursor: pointer; color: var(--accent2); font-size: 11px; }
 
-#registers { font: 12.5px var(--mono); max-height: 150px; overflow-y: auto; }
+/* ---------- fraction strip (which fraction fired) ---------- */
+
+#fracstrip {
+  display: flex; flex-wrap: wrap; gap: 3px;
+  margin: 2px 0 6px; padding: 4px;
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 6px;
+  max-height: 92px; overflow-y: auto;
+}
+#fracstrip .frac {
+  font: 11.5px var(--mono); padding: 2px 6px; border-radius: 4px;
+  border: 1px solid var(--line); color: var(--dim); white-space: nowrap;
+}
+#fracstrip .frac .ix { color: #55606f; margin-right: 4px; }
+#fracstrip .frac.next { border-color: var(--accent2); color: var(--accent2); }
+#fracstrip .frac.firing {
+  background: var(--accent); border-color: var(--accent); color: #241703;
+  font-weight: 700;
+}
+#fracstrip .frac.firing .ix { color: #5c4408; }
+
+/* ---------- register bars ---------- */
+
+#registers { font: 12.5px var(--mono); max-height: 190px; overflow-y: auto; }
+#regMode { margin-left: 6px; display: inline-flex; gap: 2px; }
+#regMode button {
+  background: transparent; color: var(--dim); border: 1px solid var(--line);
+  border-radius: 4px; padding: 0 5px; font: 10.5px var(--mono); cursor: pointer;
+}
+#regMode button.on { background: var(--accent2); color: #10202c; border-color: var(--accent2); }
+
+#registers .barrow {
+  display: grid; grid-template-columns: 96px 1fr 42px; align-items: center;
+  gap: 6px; padding: 1px 0; font: 11.5px var(--mono);
+}
+#registers .barrow .lbl { color: var(--accent2); overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+#registers .barrow.named .lbl { color: var(--accent); }
+#registers .barrow .track { background: #141a21; border: 1px solid var(--line);
+  border-radius: 3px; height: 12px; overflow: hidden; }
+#registers .barrow .fill { height: 100%; background: #2f5f86; }
+#registers .barrow.touched .fill { background: var(--accent2); }
+#registers .barrow.touched .lbl { text-decoration: underline; }
+#registers .barrow .val { text-align: right; color: var(--text); }
+#registers .barrow .val.zero { color: #4a5462; }
+#registers .barscale { color: var(--dim); font: 10.5px var(--mono); margin-top: 3px; }
+#registers .zeroNote { color: var(--dim); font-size: 11px; }
 #registers .reg { display: inline-block; margin: 2px 6px 2px 0; padding: 1px 7px;
   background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; }
 #registers .reg b { color: var(--accent2); font-weight: 600; }

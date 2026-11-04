@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FRACTRAN playground</title>
-<link rel="stylesheet" href="style.css?v=2026-11-04T19:46Z">
+<link rel="stylesheet" href="style.css?v=2026-11-04T19:50Z">
 </head>
 <body>
 <header id="topbar">
@@ -28,6 +28,7 @@
     <div class="pane-title">program
       <span id="progMeta"></span></div>
     <textarea id="program" spellcheck="false" rows="14"></textarea>
+    <div id="fracstrip" aria-label="program fractions — the amber chip is the fraction that just fired"></div>
     <div id="program-errors"></div>
     <label for="inputN">input&nbsp;n</label>
     <div class="input-row">
@@ -56,7 +57,13 @@
     <div id="fired"></div>
     <div class="pane-sub">n</div>
     <div id="nValue" class="nbox"></div>
-    <div class="pane-sub">registers <span id="regNote"></span></div>
+    <div class="pane-sub">registers
+      <span id="regNote"></span>
+      <span id="regMode" role="group" aria-label="register display style">
+        <button data-mode="chips" class="on" title="compact chips, only nonzero registers">chips</button>
+        <button data-mode="bars" title="fixed set of registers with a bar per value — registers never vanish">bars</button>
+      </span>
+    </div>
     <div id="registers"></div>
     <div class="pane-sub">events</div>
     <div id="events"></div>
@@ -78,11 +85,11 @@
   language for arithmetic</em> (1987). Example sources are named per program;
   every published program here is verified computationally by
   <code>tools/oracle.py</code> (see README).
-  <span id="build" class="build">2026-11-04T19:46Z</span>
+  <span id="build" class="build">2026-11-04T19:50Z</span>
 </footer>
 
-<script src="core.js?v=2026-11-04T19:46Z"></script>
-<script src="examples.js?v=2026-11-04T19:46Z"></script>
-<script src="app.js?v=2026-11-04T19:46Z"></script>
+<script src="core.js?v=2026-11-04T19:50Z"></script>
+<script src="examples.js?v=2026-11-04T19:50Z"></script>
+<script src="app.js?v=2026-11-04T19:50Z"></script>
 </body>
 </html>

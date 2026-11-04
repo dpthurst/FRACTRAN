@@ -251,6 +251,23 @@ const FractranCore = (() => {
     throw new Error("unknown event kind: " + spec.kind);
   }
 
+  // Which fraction would fire from this state (index), or null if the
+  // program would halt.  Cheap: one divisibility scan, no state change.
+  function nextFiredIndex(prog, st) {
+    if (!st || st.halted) return null;
+    for (let i = 0; i < prog.fractions.length; i++) {
+      const f = prog.fractions[i];
+      if (st.kind === "arith") {
+        if (st.n % f.den === 0n) return i;
+      } else {
+        let ok = true;
+        for (const [p, e] of f.denF) if ((st.fact.get(p) || 0) < e) { ok = false; break; }
+        if (ok) return i;
+      }
+    }
+    return null;
+  }
+
   // ---------------- chart geometry ----------------
   //
   // Map the run's (step, log10 n) samples onto a w×h canvas.  Pure: no DOM,
@@ -341,7 +358,8 @@ const FractranCore = (() => {
     gcdBig, isPrime, factorBig,
     parseProgram, parseInput,
     newArithState, arithStep, newFactState, factStep, factToN,
-    evalEventN, evalEventFact, chartGeometry, factToString, nToStringTruncated, log10Approx,
+    evalEventN, evalEventFact, nextFiredIndex, chartGeometry, factToString,
+    nToStringTruncated, log10Approx,
   };
 
 })();

@@ -169,6 +169,61 @@ function check(label, cond, detail) {
   check("back moves to step 11", $("stepCounter").textContent.includes("11"),
     $("stepCounter").textContent);
 
+  // ---- fraction strip: fires highlighted, next outlined ----
+  {
+    click([...window.document.querySelectorAll("#library button")].find((b) => b.dataset.id === "primegame"));
+    const chips = [...window.document.querySelectorAll("#fracstrip .frac")];
+    check("fraction strip renders one chip per fraction (14 for PRIMEGAME)",
+      chips.length === 14, String(chips.length));
+    check("strip shows the fraction values",
+      chips[0] && chips[0].textContent.includes("17/91"), chips[0] && chips[0].textContent);
+    // PRIMEGAME at n = 2 -> the next fraction to fire is 15/2 (12th, index 11)
+    const nextChips = [...window.document.querySelectorAll("#fracstrip .frac.next")];
+    check("strip marks the next fraction to fire",
+      nextChips.length === 1 && nextChips[0].dataset.index === "11",
+      nextChips.map((c) => c.dataset.index).join(","));
+    // after one step the fired fraction is 15/2 and the next one differs
+    click($("btnStep"));
+    const firing = [...window.document.querySelectorAll("#fracstrip .frac.firing")];
+    check("strip moves the highlight to the fraction that fired",
+      firing.length === 1 && firing[0].dataset.index === "11",
+      firing.map((c) => c.dataset.index).join(","));
+    check("strip still has exactly one 'next' marker",
+      window.document.querySelectorAll("#fracstrip .frac.next").length === 1);
+  }
+
+  // ---- register bars: a fixed register set that does not pop in and out ----
+  {
+    click([...window.document.querySelectorAll("#library button")].find((b) => b.dataset.id === "primegame"));
+    click(window.document.querySelector('#regMode button[data-mode="bars"]'));
+    const rowsAt = () => [...window.document.querySelectorAll("#registers .barrow")]
+      .map((r) => r.dataset.prime);
+    const first = rowsAt();
+    check("bars view renders a row per register", first.length >= 10, String(first.length));
+    check("bars view shows zero registers as rows, not disappearances",
+      window.document.querySelectorAll("#registers .barrow .val.zero").length > 0,
+      String(window.document.querySelectorAll("#registers .barrow .val.zero").length));
+
+    // step PRIMEGAME and require the row set never changes
+    let stable = true;
+    const setBefore = first.slice().sort().join(",");
+    for (let i = 0; i < 40; i++) {
+      click($("btnStep"));
+      const now = rowsAt().slice().sort().join(",");
+      if (now !== setBefore) { stable = false; break; }
+    }
+    check("bars view: register rows are constant across 40 steps", stable,
+      `${first.length} rows`);
+
+    // and the values do change (so the bars are live, not a static snapshot)
+    check("bars view: bars track the run",
+      [...window.document.querySelectorAll("#registers .barrow .val")]
+        .some((v) => v.textContent !== "0"));
+
+    click(window.document.querySelector('#regMode button[data-mode="chips"]'));
+    check("chips view comes back", window.document.querySelectorAll("#registers .barrow").length === 0);
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);
 })().catch((e) => { console.log("FAIL smoke crashed: " + (e && e.stack || e)); process.exit(1); });

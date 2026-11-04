@@ -209,6 +209,42 @@ check("parse: reduces 22/6 to 11/3", (() => {
     `${Math.min(...band.cols.map((c) => c.yMax))} vs ${Math.max(...band.cols.map((c) => c.yMin))}`);
 }
 
+// ---------------- next-fired index (the strip's "next" highlight) ----------------
+
+{
+  const pg = C.parseProgram(EXAMPLES.find((e) => e.id === "primegame").program);
+  // from n = 2 the first applicable PRIMEGAME fraction is 15/2 (index 11)
+  const st2 = C.newArithState(2n);
+  check("nextFiredIndex: PRIMEGAME from 2 is 15/2", C.nextFiredIndex(pg, st2) === 11,
+    String(C.nextFiredIndex(pg, st2)));
+
+  // agrees with the engine on every state of a real run, and is null at a halt
+  let st = C.newArithState(2n);
+  let agree = true, checked = 0;
+  for (let i = 0; i < 5000; i++) {
+    const predicted = C.nextFiredIndex(pg, st);
+    const after = C.arithStep(pg, st);
+    if (after.halted) { if (predicted !== null) agree = false; }
+    else if (predicted !== after.fired) agree = false;
+    checked++;
+    st = after;
+    if (st.halted) break;
+  }
+  check("nextFiredIndex agrees with the engine on every step", agree, `checked ${checked}`);
+
+  // halt case: the adder runs out of twos and stops
+  const adder = C.parseProgram(EXAMPLES.find((e) => e.id === "adder").program);
+  let ast = C.newArithState(C.parseInput("2^3 * 3^1"));
+  let guard = 0;
+  while (!ast.halted && guard++ < 50) ast = C.arithStep(adder, ast);
+  check("nextFiredIndex is null once halted", ast.halted && C.nextFiredIndex(adder, ast) === null);
+
+  // the fact engine must predict the same index
+  let fst = C.newFactState(2n);
+  check("nextFiredIndex agrees across engines",
+    C.nextFiredIndex(pg, fst) === C.nextFiredIndex(pg, C.newArithState(2n)));
+}
+
 // ---------------- summary ----------------
 
 console.log(`\n${passed} passed, ${failed} failed`);

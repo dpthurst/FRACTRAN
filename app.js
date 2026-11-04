@@ -36,6 +36,9 @@
   let displayFactSkipped = false;
   let firedQueue = [];     // fraction indices fired since the last render
   const VIEW_QUEUE_CAP = 200000;
+  let regMode = "chips";   // "chips" (only nonzero) | "bars" (fixed set, never vanishes)
+  let fracStripKey = "";   // cache key: rebuild chips only when the program changes
+  let fracChips = [];
   let running = false;
   let timer = null;
   let stopAtNextEvent = false;
@@ -262,11 +265,50 @@
   function render() {
     drainFiredQueue();
     renderLibrary();
+    renderFracStrip();
     renderState();
     renderEvents();
     renderTrace();
     drawChart();
     renderButtons();
+  }
+
+  // The program window's graphical companion: one chip per fraction, in
+  // order.  The amber chip is the fraction that produced the current state;
+  // the outlined chip is the one that will fire next.  Built once per program
+  // (chips are cheap but this runs on every frame at max speed), then only
+  // the two highlighted classes change.
+  function renderFracStrip() {
+    const strip = $("fracstrip");
+    if (!prog || !prog.fractions.length) { strip.innerHTML = ""; fracStripKey = ""; fracChips = []; return; }
+    const key = prog.fractions.map((f) => f.raw).join(",");
+    if (key !== fracStripKey) {
+      fracStripKey = key;
+      strip.innerHTML = "";            // rebuild: chips must not accumulate
+      fracChips = prog.fractions.map((f, i) => {
+        const el = document.createElement("span");
+        el.className = "frac";
+        el.dataset.index = String(i);
+        const ix = document.createElement("span");
+        ix.className = "ix";
+        ix.textContent = String(i + 1);
+        el.appendChild(ix);
+        el.appendChild(document.createTextNode(f.raw));
+        el.title = `fraction ${i + 1} of ${prog.fractions.length}: ${f.raw}`
+          + (f.line ? ` (editor line ${f.line})` : "");
+        strip.appendChild(el);
+        return el;
+      });
+    }
+    const fired = st && !st.halted && st.fired !== null && st.fired !== undefined ? st.fired : -1;
+    const next = st && !st.halted ? C.nextFiredIndex(prog, st) : null;
+    fracChips.forEach((el, i) => {
+      el.classList.toggle("firing", i === fired);
+      el.classList.toggle("next", i === next && i !== fired);
+    });
+    if (fired >= 0 && fracChips[fired] && fracChips[fired].scrollIntoView) {
+      try { fracChips[fired].scrollIntoView({ block: "nearest", inline: "nearest" }); } catch (e) { /* jsdom */ }
+    }
   }
 
   // Apply the fractions that fired since the last render to the display
@@ -360,20 +402,39 @@
     renderRegisters();
   }
 
+  // The registers a program can ever touch: primes in its fractions, the
+  // example's named registers, and anything currently nonzero.  Fixed for a
+  // given program — this is what makes the "bars" view stable while
+  // PRIMEGAME's exponents come and go.
+  function registerPrimeSet() {
+    const set = new Set();
+    for (const f of (prog ? prog.fractions : [])) {
+      for (const p of f.numF.keys()) set.add(p);
+      for (const p of f.denF.keys()) set.add(p);
+    }
+    if (example && example.registers) for (const k in example.registers) set.add(BigInt(k));
+    const fact = viewFact();
+    if (fact) for (const p of fact.keys()) set.add(p);
+    return [...set].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  }
+
   function renderRegisters() {
     const box = $("registers");
     const legend = example ? example.registers || {} : {};
     const fact = viewFact();
     $("regNote").textContent = example && Object.keys(legend).length
       ? "(named = the example's register map)" : "(exponents of the primes in n)";
+    for (const b of $("regMode").querySelectorAll("button")) {
+      b.classList.toggle("on", b.dataset.mode === regMode);
+    }
     if (!fact) {
       box.innerHTML = '<span class="reg">register view skipped — n grew too large to factor for display'
         + ' (the arithmetic engine itself never factors; the registers engine keeps it exactly)</span>';
       return;
     }
+    if (regMode === "bars") { renderRegisterBars(box, fact, legend); return; }
+
     const entries = [...fact.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
-    $("regNote").textContent = example && Object.keys(legend).length
-      ? "(named = the example's register map)" : "(exponents of the primes in n)";
     if (!entries.length) { box.innerHTML = '<span class="reg">n = 1 (all registers zero)</span>'; return; }
     const named = entries.filter(([p]) => legend[String(p)]);
     const other = entries.filter(([p]) => !legend[String(p)]);
@@ -385,6 +446,39 @@
       html += `<span class="reg"><b>${p}</b>^${e}</span>`;
     }
     if (other.length > 40) html += `<span class="reg">… ${other.length - 40} more primes</span>`;
+    box.innerHTML = html;
+  }
+
+  // Graphical registers: a row per register in the program's fixed prime set,
+  // a bar for its value, and the value itself.  A zero register is a visible
+  // empty row, not a disappearance.  Rows the last fired fraction touched are
+  // underlined/brighter.
+  function renderRegisterBars(box, fact, legend) {
+    const primes = registerPrimeSet();
+    if (!primes.length) { box.innerHTML = '<span class="reg">no registers — the program has no prime factors</span>'; return; }
+    let maxExp = 1;
+    for (const p of primes) { const e = fact.get(p) || 0; if (e > maxExp) maxExp = e; }
+    const fired = st && st.fired !== null && st.fired !== undefined && !st.halted
+      ? prog.fractions[st.fired] : null;
+    const touched = new Set();
+    if (fired) {
+      for (const p of fired.numF.keys()) touched.add(String(p));
+      for (const p of fired.denF.keys()) touched.add(String(p));
+    }
+    let html = "";
+    for (const p of primes) {
+      const e = fact.get(p) || 0;
+      const name = legend[String(p)];
+      const label = name ? escapeHtml(name) : `${p}`;
+      const pct = Math.max(e > 0 ? 2 : 0, Math.round((e / maxExp) * 100));
+      html += `<div class="barrow${name ? " named" : ""}${touched.has(String(p)) ? " touched" : ""}"`
+        + ` data-prime="${p}" title="register ${p}${name ? " (" + escapeHtml(name) + ")" : ""} = ${e}">`
+        + `<span class="lbl">${label}</span>`
+        + `<span class="track"><span class="fill" style="width:${pct}%"></span></span>`
+        + `<span class="val${e === 0 ? " zero" : ""}">${e}</span></div>`;
+    }
+    html += `<div class="barscale">${primes.length} registers · bar full = ${maxExp}`
+      + ` · underlined = touched by the last fired fraction</div>`;
     box.innerHTML = html;
   }
 
@@ -604,6 +698,15 @@
     });
   }
 
+  // register display style: chips (only nonzero) or bars (fixed set)
+  for (const b of $("regMode").querySelectorAll("button")) {
+    b.addEventListener("click", () => {
+      regMode = b.dataset.mode;
+      try { localStorage.setItem("fractran.regMode", regMode); } catch (e) { /* private mode */ }
+      render();
+    });
+  }
+
   document.addEventListener("keydown", (ev) => {
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return;
@@ -615,6 +718,11 @@
   window.addEventListener("resize", () => render());
 
   // ---------------- boot ----------------
+
+  try {
+    const saved = localStorage.getItem("fractran.regMode");
+    if (saved === "bars" || saved === "chips") regMode = saved;
+  } catch (e) { /* private mode */ }
 
   const m = location.hash.match(/^#example=([a-z0-9_-]+)$/);
   const byHash = m && EXAMPLES.find((e) => e.id === m[1]);

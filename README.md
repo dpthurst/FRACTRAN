@@ -27,12 +27,21 @@ python3 -m http.server 8000     # then http://localhost:8000
   decoded outputs for the machines, …).
 - **Program + input (middle):** edit the fractions; input is a decimal
   integer or a product of prime powers such as `2^12 * 3^5`. `#` and `//`
-  start comments. "apply" re-parses and restarts.
+  start comments. "apply" re-parses and restarts. Under the editor, the
+  **fraction strip** shows the program as chips: the amber chip is the
+  fraction that just fired, the outlined one is the fraction that will fire
+  next (the run scrolls the amber chip into view).
 - **Controls:** step / run / back / next-event / reset, at 10 → max steps
   per second (space = run/pause, ←/→ = back/step).
 - **State (right):** the fraction that fired, `n` itself (full value, copy
-  button for very large ones), the register view (prime exponents, named
-  where the example defines a register map), and the decoded events.
+  button for very large ones), the register view, and the decoded events.
+  Registers have two displays, toggled above the panel: **chips** (only the
+  nonzero registers, compact) and **bars** — a *fixed* set of rows for every
+  register the program can touch (primes in its fractions, plus the example's
+  named registers), each with a bar and its value. In bars mode a register
+  that drops to zero becomes an empty row rather than disappearing, so a run
+  like PRIMEGAME does not flicker; rows the last fired fraction touched are
+  underlined.
 - **Chart:** log₁₀ n over steps. The shaded band spans every value in each
   pixel column (PRIMEGAME's oscillation is the point), the bright line is the
   upper envelope, orange dots mark events, and the left edge carries the
