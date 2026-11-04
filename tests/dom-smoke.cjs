@@ -89,11 +89,36 @@ function check(label, cond, detail) {
   await sleep(400);
   const duringRun = stepNum();
   check("run advanced the step counter", duringRun >= 3 && duringRun <= 15, String(duringRun));
+  // The pause control must be a *live* button: jsdom dispatches clicks to
+  // disabled buttons, a browser does not — asserting only on the click
+  // outcome let a disabled pause button pass. Assert the enabled state.
+  check("pause control is enabled while running", $("btnRun").disabled === false,
+    "btnRun.disabled = " + $("btnRun").disabled);
+  check("pause control is labelled pause", $("btnRun").textContent.includes("pause"),
+    $("btnRun").textContent);
   click($("btnRun"));                       // pause
   await sleep(250);
   const paused = stepNum();
   await sleep(250);
   check("pause stops the run", stepNum() === paused, `${stepNum()} vs ${paused}`);
+  check("pause re-labels the control run", $("btnRun").textContent.includes("run"),
+    $("btnRun").textContent);
+
+  // ---- a program that never halts (PRIMEGAME) can be paused at full speed ----
+  const primegameBtn = [...window.document.querySelectorAll("#library button")]
+    .find((b) => b.dataset.id === "primegame");
+  click(primegameBtn);
+  $("speed").value = "max";
+  click($("btnRun"));
+  await sleep(300);
+  check("max-speed run advances", stepNum() > 100, String(stepNum()));
+  check("pause control live at max speed", $("btnRun").disabled === false);
+  click($("btnRun"));
+  await sleep(200);
+  const pmPaused = stepNum();
+  await sleep(300);
+  check("PRIMEGAME paused by the button", stepNum() === pmPaused, `${stepNum()} vs ${pmPaused}`);
+  $("speed").value = "10";
 
   // ---- engine toggle to registers: reset, step, register chips ----
   click(window.document.querySelector('#engineToggle button[data-engine="fact"]'));

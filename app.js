@@ -485,12 +485,16 @@
   }
 
   function renderButtons() {
-    const canStep = !!st && !st.halted && prog && prog.errors.length === 0;
-    $("btnStep").disabled = !canStep || running;
-    $("btnRun").disabled = !canStep || running;
-    $("btnNext").disabled = !canStep || running || !eventSpec();
+    // Step/Next/Back are unavailable mid-run, but Run must stay live: it is
+    // the pause control, and a disabled pause button leaves a forever-running
+    // program (PRIMEGAME) with no way to stop.
+    const canRun = !!st && !st.halted && prog && prog.errors.length === 0;
+    $("btnRun").disabled = !canRun;
+    $("btnStep").disabled = !canRun || running;
+    $("btnNext").disabled = !canRun || running || !eventSpec();
     $("btnBack").disabled = running || !history.length;
     $("btnRun").textContent = running ? "❚❚ pause" : "▶ run";
+    $("btnRun").classList.toggle("primary", canRun);
   }
 
   // ---------------- actions ----------------
