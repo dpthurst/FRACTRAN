@@ -301,13 +301,16 @@ EXAMPLES = [
             "Conway's 40-fraction π machine. The program carries the event "
             "spec '# event: pow(2) -- next digit of π', so set the input and "
             "press 'next event' to stop at the next pure power of two — its "
-            "exponent is the digit. From 89 (digit 0) that is 2^3 after 775 "
-            "steps: verified. For the documented inputs 2^d·89 with d ≥ 1 we "
-            "have NOT been able to reproduce the claim (no pure power of two "
-            "at all within 30 million steps for d = 1; two simulators agree), "
-            "so treat later digits as unverified here — the run will simply "
-            "keep going if no power of two comes. The transcription was "
-            "re-checked character by character against the source."
+            "exponent is the digit. The seed convention (Kaushik–Murphy–"
+            "Weed; Conway's paper wrote 2^n, dropping the ·89): seed "
+            "89·2^k computes digit k, so 89 → 2^3 at step 775 (digit 0). "
+            "Be warned: the FIRST digit is the cheap one. The OEIS record "
+            "(A399511, trajectory from 1) reaches 10^6 steps on the next "
+            "digit without a power of two appearing, with intermediates of "
+            "150,000+ digits, and our own search exceeded 3·10^8 steps for "
+            "seed 89·2^1 — no published step count exists for later digits. "
+            "Our simulation matches the OEIS trajectory for all 1001 "
+            "published values."
         ),
         source="J. H. Conway, 'FRACTRAN: a simple universal programming language for arithmetic' (1987), Theorem 2; transcribed from Wikipedia (which corrects the input to 2^n·89); verified computationally",
     ),

@@ -92,11 +92,17 @@ computationally — see below):
   at prime exponents; we reproduce the published step counts 19, 69, 281,
   710 (variant: 19, 69, 280, 707) for 2, 3, 5, 7.
 - Conway's **PIGAME** — from 89 the first power of two is $2^3$ (the
-  initial digit of π) at step 775, exactly as documented. The general
-  "digit $d$ from $2^d\cdot 89$" claim we could **not** verify: a
-  30-million-step search finds no pure power of two at all for $d = 1$
-  (two independent simulators agree), so the app documents that limit
-  rather than asserting the claim.
+  initial digit of π) at step 775, exactly as documented. Our simulation
+  also reproduces the OEIS **A399511** trajectory (Hasler's PIGAME
+  successor function, from 1) for **all 1001 published values** — an
+  independent published reference for the transcription and both engines.
+  Later digits are a different animal: the seed convention is $89\cdot 2^k$
+  for digit $k$ (Kaushik–Murphy–Weed, arXiv:2412.16185; Conway's paper
+  wrote $2^n$, dropping the $\cdot 89$), and the OEIS record shows the
+  *second* digit taking more than $10^6$ steps with 150,000-digit
+  intermediates; our own search exceeded $3\times 10^8$ steps for
+  $89\cdot 2^1$ without reaching $2^1$. No published step count exists
+  beyond the first digit — the app says so rather than implying otherwise.
 - Conway's multiplier and the quotient/remainder program (Wikipedia's
   "Creating simple programs"), John Baez's Hamming-weight program, and the
   esolangs wiki's second multiplier — all checked on grids of inputs.
