@@ -156,6 +156,59 @@ check("parse: reduces 22/6 to 11/3", (() => {
   return f.num === 11n && f.den === 3n;
 })());
 
+// ---------------- chart geometry (pure; the canvas cannot be reached here) ----------------
+
+{
+  // normal series
+  const pts = [];
+  for (let i = 0; i < 5000; i++) pts.push({ step: i, log10: 2 + 10 * Math.abs(Math.sin(i / 50)) });
+  for (const [w, h] of [[800, 180], [200, 60], [3, 3], [1200, 400]]) {
+    const geo = C.chartGeometry(pts, w, h, 6);
+    const ok = geo.cols.every((c) => Number.isFinite(c.x) && Number.isFinite(c.yMin)
+      && Number.isFinite(c.yMax)
+      && c.x >= 0 && c.x <= w && c.yMin >= 0 && c.yMin <= h
+      && c.yMax >= 0 && c.yMax <= h);
+    check(`chart geometry stays in the box at ${w}x${h}`, ok && geo.cols.length > 0,
+      `${geo.cols.length} cols`);
+  }
+
+  // a flat series must not divide by zero
+  const flat = C.chartGeometry([{ step: 0, log10: 5 }, { step: 10, log10: 5 }], 300, 100, 6);
+  check("chart geometry: flat series is finite", flat.cols.every((c) =>
+    Number.isFinite(c.yMin) && Number.isFinite(c.yMax)));
+
+  // single point
+  const one = C.chartGeometry([{ step: 0, log10: 0 }], 300, 100, 6);
+  check("chart geometry: single point is finite", one.cols.length === 1
+    && Number.isFinite(one.cols[0].yMin));
+
+  // empty series
+  const none = C.chartGeometry([], 300, 100, 6);
+  check("chart geometry: empty series yields no columns", none.cols.length === 0);
+
+  // hostile input: NaN/Infinity samples are dropped, not propagated
+  const hostile = C.chartGeometry([
+    { step: 0, log10: 1 }, { step: 1, log10: NaN }, { step: 2, log10: Infinity },
+    { step: 3, log10: 4 },
+  ], 300, 100, 6);
+  check("chart geometry: NaN/Infinity dropped", hostile.cols.every((c) =>
+    Number.isFinite(c.yMin) && Number.isFinite(c.yMax)));
+
+  // the band is a real range: across the columns, the lowest and highest
+  // values must both survive (this is the property the old max-only chart
+  // lacked — it kept the maximum and threw the low values away)
+  const band = C.chartGeometry([{ step: 0, log10: 1 }, { step: 1, log10: 9 }], 400, 100, 6);
+  const bandMin = Math.min(...band.cols.map((c) => c.vMin));
+  const bandMax = Math.max(...band.cols.map((c) => c.vMax));
+  check("chart geometry: the low value survives in the band",
+    Math.abs(bandMin - 1) < 1e-9, `min=${bandMin}`);
+  check("chart geometry: the high value survives in the band",
+    Math.abs(bandMax - 9) < 1e-9, `max=${bandMax}`);
+  check("chart geometry: a full-height band spans the box",
+    Math.abs(Math.min(...band.cols.map((c) => c.yMax)) - Math.max(...band.cols.map((c) => c.yMin))) > 50,
+    `${Math.min(...band.cols.map((c) => c.yMax))} vs ${Math.max(...band.cols.map((c) => c.yMin))}`);
+}
+
 // ---------------- summary ----------------
 
 console.log(`\n${passed} passed, ${failed} failed`);

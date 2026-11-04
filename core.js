@@ -251,7 +251,66 @@ const FractranCore = (() => {
     throw new Error("unknown event kind: " + spec.kind);
   }
 
-  // ---------------- display helpers ----------------
+  // ---------------- chart geometry ----------------
+  //
+  // Map the run's (step, log10 n) samples onto a w×h canvas.  Pure: no DOM,
+  // no canvas, so it can be unit-tested (the browser cannot be reached from
+  // the build environment).  Guarantees, whatever the input:
+  //   * every coordinate is finite and inside [pad, w-pad] × [pad, h-pad];
+  //   * an empty series yields no columns rather than NaN bounds.
+  // Per pixel column it reports the smallest and largest value in that
+  // column, so the chart can show a band (the true range of n) instead of a
+  // maximum only — a maximum-only line over PRIMEGAME's oscillation runs
+  // along the top and makes the dips look like they leave the plot.
+  function chartGeometry(points, w, h, pad) {
+    const width = Math.max(2, Math.floor(w));
+    const height = Math.max(2, Math.floor(h));
+    // padding must leave a usable box even on a tiny canvas
+    pad = Math.max(0, Math.min(pad === undefined ? 4 : pad,
+      Math.floor((width - 1) / 2), Math.floor((height - 1) / 2)));
+    const innerW = Math.max(1, width - 2 * pad);
+    const innerH = Math.max(1, height - 2 * pad);
+    const geo = {
+      width, height, pad, cols: [], maxStep: 1, lo: 0, hi: 1,
+      xOf: (s) => pad + (s / Math.max(1, geo.maxStep)) * innerW,
+      yOf: (v) => pad + (1 - (v - geo.lo) / Math.max(1e-9, geo.hi - geo.lo)) * innerH,
+    };
+    if (!points || !points.length) return geo;
+
+    let lo = Infinity, hi = -Infinity, maxStep = 1;
+    let finite = false;
+    for (const p of points) {
+      if (!Number.isFinite(p.log10) || !Number.isFinite(p.step)) continue;
+      finite = true;
+      if (p.log10 < lo) lo = p.log10;
+      if (p.log10 > hi) hi = p.log10;
+      if (p.step > maxStep) maxStep = p.step;
+    }
+    if (!finite) return geo;
+    if (hi - lo < 1) hi = lo + 1;          // a flat series still gets a scale
+    geo.lo = lo; geo.hi = hi; geo.maxStep = maxStep;
+
+    const buckets = new Array(width);
+    for (const p of points) {
+      if (!Number.isFinite(p.log10) || !Number.isFinite(p.step)) continue;
+      const c = Math.min(width - 1, Math.max(0, Math.floor(geo.xOf(p.step))));
+      const b = buckets[c];
+      if (!b) buckets[c] = { vMin: p.log10, vMax: p.log10 };
+      else { if (p.log10 < b.vMin) b.vMin = p.log10; if (p.log10 > b.vMax) b.vMax = p.log10; }
+    }
+    for (let c = 0; c < width; c++) {
+      const b = buckets[c];
+      if (!b) continue;
+      geo.cols.push({
+        x: c + 0.5,
+        yMin: geo.yOf(b.vMin),
+        yMax: geo.yOf(b.vMax),
+        vMin: b.vMin,
+        vMax: b.vMax,
+      });
+    }
+    return geo;
+  }
 
   function factToString(fact, legend) {
     const parts = [];
@@ -282,7 +341,7 @@ const FractranCore = (() => {
     gcdBig, isPrime, factorBig,
     parseProgram, parseInput,
     newArithState, arithStep, newFactState, factStep, factToN,
-    evalEventN, evalEventFact, factToString, nToStringTruncated, log10Approx,
+    evalEventN, evalEventFact, chartGeometry, factToString, nToStringTruncated, log10Approx,
   };
 
 })();

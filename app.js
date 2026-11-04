@@ -428,60 +428,68 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    if (!chart.length) {
+    if (!chart.length || w < 2 || h < 2) {
       ctx.fillStyle = "#8a93a3";
-      ctx.font = "12px " + "system-ui";
-      ctx.fillText("press run — log₁₀ n over steps, orange dots mark events", 10, 20);
+      ctx.font = "12px system-ui, sans-serif";
+      ctx.fillText("press run — log₁₀ n over steps; the band spans the values in each pixel column",
+                   10, 20);
       $("chartNote").textContent = "";
       return;
     }
 
-    const maxStep = Math.max(chart[chart.length - 1].step, 1);
-    let lo = Infinity, hi = -Infinity;
-    for (const pt of chart) { if (pt.log10 < lo) lo = pt.log10; if (pt.log10 > hi) hi = pt.log10; }
-    if (hi - lo < 1) { hi = lo + 1; }
-    const X = (s) => (s / maxStep) * (w - 8) + 4;
-    const Y = (v) => h - 8 - ((v - lo) / (hi - lo)) * (h - 20);
+    // Pure, tested geometry (core.js): every coordinate comes back finite and
+    // inside the plot box, whatever the data.
+    const geo = C.chartGeometry(chart, w, h, 6);
+    const clampY = (y) => Math.max(geo.pad, Math.min(h - geo.pad, y));
 
-    // bucket per pixel column, take the max within a bucket
-    const cols = Math.max(2, Math.floor(w));
-    const bucket = new Array(cols).fill(-Infinity);
-    for (const pt of chart) {
-      const c = Math.min(cols - 1, Math.max(0, Math.floor(X(pt.step))));
-      if (pt.log10 > bucket[c]) bucket[c] = pt.log10;
-    }
-    ctx.strokeStyle = "#6fc3ff";
+    // y-axis guides carrying the actual values — the vertical position alone
+    // must not be mistaken for "zero" or for values below the plot
+    ctx.strokeStyle = "#2c3440";
+    ctx.fillStyle = "#8a93a3";
+    ctx.font = "10px ui-monospace, monospace";
     ctx.lineWidth = 1;
+    const mid = (geo.hi + geo.lo) / 2;
+    for (const v of [geo.hi, mid, geo.lo]) {
+      const y = Math.round(clampY(geo.yOf(v))) + 0.5;
+      ctx.beginPath(); ctx.moveTo(30, y); ctx.lineTo(w - 4, y); ctx.stroke();
+      ctx.fillText(v.toFixed(1), 2, Math.min(h - 2, Math.max(9, y + 3)));
+    }
+
+    // the band: the full range of n within each pixel column
+    ctx.strokeStyle = "rgba(111,195,255,0.35)";
     ctx.beginPath();
-    let started = false;
-    for (let c = 0; c < cols; c++) {
-      if (bucket[c] === -Infinity) continue;
-      const x = c + 0.5, y = Y(bucket[c]);
-      if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+    for (const c of geo.cols) {
+      ctx.moveTo(c.x, clampY(c.yMin));
+      ctx.lineTo(c.x, clampY(c.yMax));
     }
     ctx.stroke();
 
-    // event markers
-    const specStep = (e) => e.step;
+    // the upper envelope
+    ctx.strokeStyle = "#6fc3ff";
+    ctx.beginPath();
+    let started = false;
+    for (const c of geo.cols) {
+      const y = clampY(c.yMax);
+      if (!started) { ctx.moveTo(c.x, y); started = true; } else ctx.lineTo(c.x, y);
+    }
+    ctx.stroke();
+
+    // event markers: nearest column, dot on that column's envelope
     ctx.fillStyle = "#ffb347";
     for (const e of events) {
-      const x = X(specStep(e)), v = chart[Math.min(chart.length - 1,
-        binaryFind(chart, e.step))].log10;
-      ctx.beginPath();
-      ctx.arc(x, Y(v), 3, 0, Math.PI * 2);
-      ctx.fill();
+      if (!geo.cols.length) continue;
+      const xe = geo.xOf(e.step);
+      let best = geo.cols[0];
+      for (const c of geo.cols) if (Math.abs(c.x - xe) < Math.abs(best.x - xe)) best = c;
+      const x = Math.max(geo.pad, Math.min(w - geo.pad, best.x));
+      ctx.beginPath(); ctx.arc(x, clampY(best.yMax), 3, 0, Math.PI * 2); ctx.fill();
     }
-    $("chartNote").textContent = `steps 0 … ${maxStep.toLocaleString("en")}`
-      + (st && st.step >= STEP_GUARD ? " — step guard reached" : "");
-  }
 
-  function binaryFind(arr, step) {   // last index with arr[i].step <= step
-    let lo = 0, hi = arr.length - 1;
-    while (lo < hi) {
-      const mid = (lo + hi + 1) >> 1;
-      if (arr[mid].step <= step) lo = mid; else hi = mid - 1;
-    }
-    return lo;
+    const cur = chart[chart.length - 1].log10;
+    $("chartNote").textContent = `log₁₀ n = ${cur.toFixed(1)} now · `
+      + `axis ${geo.lo.toFixed(1)} … ${geo.hi.toFixed(1)} · `
+      + `steps 0 … ${geo.maxStep.toLocaleString("en")}`
+      + (st && st.step >= STEP_GUARD ? " — step guard reached" : "");
   }
 
   function renderButtons() {

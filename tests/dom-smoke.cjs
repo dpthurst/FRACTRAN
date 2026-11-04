@@ -40,13 +40,23 @@ const dom = new JSDOM(html, {
 });
 const { window } = dom;
 
-// jsdom has no canvas implementation: a no-op 2d context keeps the chart
-// code running (clientWidth is 0, so there is nothing to draw anyway).
-const ctx2d = {
-  setTransform() {}, clearRect() {}, beginPath() {}, moveTo() {}, lineTo() {},
-  stroke() {}, arc() {}, fill() {}, fillText() {},
+// jsdom has no canvas implementation: a recording no-op 2d context keeps the
+// chart code running and lets the test inspect every coordinate the page
+// would draw.  jsdom also reports a 0×0 canvas, which would make drawChart
+// take its "too small" early return — give it a realistic layout so the
+// chart path is actually exercised.
+const drawn = [];
+const mkCtx = () => ({
+  setTransform() {}, clearRect() {}, beginPath() {},
+  moveTo(x, y) { drawn.push(["move", x, y]); },
+  lineTo(x, y) { drawn.push(["line", x, y]); },
+  stroke() {}, arc(x, y, r) { drawn.push(["arc", x, y, r]); },
+  fill() {}, fillText(t, x, y) { drawn.push(["text", t, x, y]); },
   strokeStyle: "", fillStyle: "", lineWidth: 1, font: "",
-};
+});
+const ctx2d = mkCtx();
+Object.defineProperty(window.HTMLCanvasElement.prototype, "clientWidth", { get: () => 800 });
+Object.defineProperty(window.HTMLCanvasElement.prototype, "clientHeight", { get: () => 180 });
 window.HTMLCanvasElement.prototype.getContext = () => ctx2d;
 
 // One concatenated evaluation: in a browser, separate <script> tags share
@@ -139,6 +149,20 @@ function check(label, cond, detail) {
     $("haltBadge").textContent.includes("halted after 12"), $("haltBadge").textContent);
   check("halt event decoded the output (3^17)", $("events").textContent.includes("17"),
     $("events").textContent.slice(0, 80));
+
+  // ---- chart: drawn, labelled, and inside its box ----
+  check("chart note reports log₁₀ n and the axis range",
+    /log₁₀ n = [\d.]+ now/.test($("chartNote").textContent)
+    && /axis [\d.]+ … [\d.]+/.test($("chartNote").textContent),
+    $("chartNote").textContent);
+  {
+    const bad = drawn.filter((d) => d.length >= 3
+      && d.slice(1, 3).some((v) => typeof v === "number" && (!Number.isFinite(v) || v < 0 || v > 800))
+      || (d.length >= 3 && typeof d[2] === "number" && d[0] !== "text" && d[2] > 180));
+    check("chart: every drawn coordinate is finite and inside the canvas",
+      drawn.length > 0 && bad.length === 0,
+      `${drawn.length} ops, ${bad.length} outside: ${JSON.stringify(bad.slice(0, 3))}`);
+  }
 
   // ---- back ----
   click($("btnBack"));
