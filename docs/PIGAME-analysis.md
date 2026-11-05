@@ -70,20 +70,45 @@ f2 needs 7·23; node 61: f12 needs 2·61, f13 needs 3·61).  A 10^11-step run
 with per-10^9 state snapshots is measuring the full chain of loop sizes
 (.scratch/k1-states-1e9.txt).
 
-## The open discrepancy
+## The measured loop chain (10^11-step run, seed 89·2^1, 100 snapshots)
 
-Per KMW's proof, the second digit needs only E ≈ 4096 (their bound
-E ≥ 4·2^(10·1)); the Wallis walk should then be ~E/2 = 2048 terms.  The
-observed accumulator is ≥2.5×10^10 — about **10^7 times larger**.  So either
-the flowchart's Phase 1 builds an E far beyond what the proof requires (a
-~10^7× overshoot at digit 1, consistent in direction with KMW's remark that
-"there is no need to generate such a large E" but far larger than that
-remark suggests), or the 11-register counts something else entirely (a
-dividend counter in Phase 3, say).  Deciding which requires decoding
-Figure 3's Phase-1 arrows against the observed trajectory; the instrumented
-simulator (`--rle`, `--state-every`) is the tool for that follow-up.
+Per 10^9-step window the machine is in one of three loops, each draining its
+fuel register at exactly 1 unit per ~32,768 steps — one full 2-pump cycle
+(height 8192 = 2E for this digit):
 
-Either way, the practical conclusion stands: the published program's
-per-digit cost is enormous by construction, the KMW simplification remark
-understates the gap, and a re-derived flowchart with a tight E is the route
-to a PIGAME whose later digits are actually computable.
+    L1  steps 0 - 2.65e8      11 += 1 per 4-step cycle   (6.6e7 iterations)
+    L2  steps 2.7e8 - 5e9     7 += 10 per cycle          (drains 3^163,760)
+    L3  steps 5e9 - ...       11 += 2.5 per step         (drains 7^1.07e10)
+
+The conversion ratio between consecutive stages measures ~8×10^4 (65,344
+sevens per 3-unit; 81,875 = 8192×10 elevens per 7-unit — the pump height
+times the digit-shift base 10).  Consequences:
+
+* L3 alone needs ~1.07×10^10 iterations × 32,768 steps ≈ **3.5×10^14
+  steps** — the 10^11-step search covered only 0.03% of it.
+* If the cascade continues (L4's fuel = L3's accumulator, ~8.8×10^14), the
+  next loop costs ~3×10^19 steps — ~9,000 years at 10^8 steps/s in C.
+* So the second digit of π via PIGAME costs of order **10^19 FRACTRAN
+  steps**, each loop's fuel being ~8×10^4× the previous accumulator.  This
+  quantifies why it has never been computed by direct simulation, and shows
+  KMW's "smaller E" simplification (a constant-factor fix, E from 4·1024^k
+  down to π·10^k) does not change the exponential-in-k character: the
+  unary-loop cascade itself multiplies the fuel ~8×10^4 per stage.
+
+Measured relations (all from the 100 snapshots): fuel drains 1 unit per
+32,768 steps (= 4 × 8192 = 4 × 2E, one full 2-pump cycle per fuel unit);
+the 2-pump height is 2E exactly; the accumulator grows 2E × 10 per fuel
+unit.
+
+## The open question
+
+The measured chain gives L1 = 6.6×10^7 iterations, L2 ≈ 3×10^8 (draining
+3^163,760), L3 ≈ 1.1×10^10 iterations = 3.5×10^14 steps (draining
+7^1.07×10^10) — and if the cascade continues with L4 consuming L3's
+~8.8×10^14-unit accumulator, L4 alone costs ~3×10^19 steps.  Which loops
+belong to the digit's computation versus interim shuffling, and where the
+emission (node 1, the 1/1024 strip, f40 re-seed) branches off, requires a
+complete Phase-3 decode of Figure 3 against the trajectory.  The
+instrumented simulator is the tool; the measured relations above (fuel
+drains 1 unit per 2-pump cycle; accumulator grows 2E×10 per fuel unit)
+are the constraints any derivation must reproduce.
