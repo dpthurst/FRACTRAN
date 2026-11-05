@@ -173,11 +173,14 @@ the esolangs wiki's recorded J session disagreed with the "disproof", and
 the bug was fixed in the oracle before anything shipped — with both
 Kilminster programs then verifying clean and entering the library.
 
-Known unverified part: real-browser *rendering and layout* (chart pixels,
-fonts, responsive grid) — jsdom has neither. The UI wiring, handlers and
-state-to-DOM flow are tested headlessly by `tests/dom-smoke.cjs`; the first
-test of the page as a page is the author opening it. If something looks
-off, the engines in `core.js` are the tested ground truth.
+Known unverified part: real-device behaviour (touch, other GPUs, other
+browsers).  Rendering, layout and interaction **are** browser-verified:
+headless Firefox (playwright) loads the page, clicks through
+step/run/pause/bars/factors/next-event, and takes the screenshots in
+`.scratch/js/shots/` — see `tests/browser-smoke.mjs` (skipped when
+playwright is not installed).  jsdom covers wiring; Firefox covers
+rendering.  If something still looks off on your machine, a screenshot
+would settle it.
 
 ## Rebuilding the generated pieces
 
