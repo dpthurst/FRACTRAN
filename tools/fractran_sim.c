@@ -184,7 +184,7 @@ static int pure_power(int *idx_out, long long *exp_out) {
 
 int main(int argc, char **argv) {
     const char *progfile = NULL, *seed = NULL;
-    unsigned long long steps = 0, progress = 0;
+    unsigned long long steps = 0, progress = 0, stateEvery = 0;
     int dump = 0;
 
     for (int i = 1; i < argc; i++) {
@@ -192,6 +192,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--seed") && i + 1 < argc) seed = argv[++i];
         else if (!strcmp(argv[i], "--steps") && i + 1 < argc) steps = strtoull(argv[++i], NULL, 10);
         else if (!strcmp(argv[i], "--progress") && i + 1 < argc) progress = strtoull(argv[++i], NULL, 10);
+        else if (!strcmp(argv[i], "--state-every") && i + 1 < argc) stateEvery = strtoull(argv[++i], NULL, 10);
         else if (!strcmp(argv[i], "--dump-states")) dump = 1;
         else { fprintf(stderr, "unknown arg %s\n", argv[i]); return 2; }
     }
@@ -226,6 +227,15 @@ int main(int argc, char **argv) {
 
         if (dump) {
             printf("n %llu", step);
+            for (int i = 0; i < nprimes; i++) {
+                int idx = order[i];
+                if (exponents[idx] > 0)
+                    printf(" %lld^%lld", primes[idx], exponents[idx]);
+            }
+            printf("\n");
+        }
+        if (stateEvery && step % stateEvery == 0) {
+            printf("state %llu", step);
             for (int i = 0; i < nprimes; i++) {
                 int idx = order[i];
                 if (exponents[idx] > 0)
