@@ -96,14 +96,18 @@ computationally — see below):
   also reproduces the OEIS **A399511** trajectory (Hasler's PIGAME
   successor function, from 1) for **all 1001 published values** — an
   independent published reference for the transcription and both engines.
-  Later digits are a different animal: the seed convention is $89\cdot 2^k$
-  for digit $k$ (Kaushik–Murphy–Weed, arXiv:2412.16185; Conway's paper
-  wrote $2^n$, dropping the $\cdot 89$), and the OEIS record shows the
-  *second* digit taking more than $10^6$ steps with 150,000-digit
-  intermediates; our own searches exceeded $3\times 10^8$ steps for each
-  of the seeds $89\cdot 2^1$ and $89\cdot 2^2$ without reaching a power
-  of two. No published step count exists
-  beyond the first digit — the app says so rather than implying otherwise.
+  Later digits are a different animal: the mechanism (Kaushik–Murphy–
+  Weed, arXiv:2412.16185, who give the first full proof) is **Wallis's
+  product** for π/2, truncated at an even $E \ge 4\cdot 2^{10n}$ (the
+  bound their Mähler irrationality-measure argument forces, which they
+  themselves note is far larger than necessary), so the per-digit cost
+  grows like $1024^n$.  Empirically: the seed convention is $89\cdot 2^k$
+  for digit $k$, the OEIS record shows the *second* digit taking more than
+  $10^6$ steps with 150,000-digit intermediates, and our C-simulator
+  searches exceeded $3\times 10^8$ steps for each of $89\cdot 2^1$ and
+  $89\cdot 2^2$ without reaching a power of two.  No published step count
+  exists beyond the first digit — the app says so rather than implying
+  otherwise.
 - Conway's multiplier and the quotient/remainder program (Wikipedia's
   "Creating simple programs"), John Baez's Hamming-weight program, and the
   esolangs wiki's second multiplier — all checked on grids of inputs.
