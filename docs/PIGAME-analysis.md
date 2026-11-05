@@ -40,6 +40,36 @@ to 10^9 steps was decomposed with these, then read against the flowchart
    accumulated ≥2.5×10^10 units.  Snapshots show it still growing linearly
    (6.7×10^7 at step 3×10^8; rate ~0.22/step) with everything else bounded.
 
+## The decoded flowchart (Figure 3, all 40 arrows)
+
+Each fraction is one arrow: from-node = denominator's distinctive prime,
+to-node = numerator's, other factors are register deltas.  The full map:
+
+    Phase 1 (build E):  89 ⇄ 47 (+11 / −5), 47 → 17 (+49), 17 ⇄ 19 (+25 / −11),
+                        19 → 89 (−3), 19 → 13 (−2), 13 ⇄ 59 (×243/7 = +3^5, −7)
+    Phase 2 (Wallis):   19 → 83 (+0), 83 ⇄ 37 (+3 / −11), 37 → 23,
+                        23 ⇄ 73 (−2,+5 / hop), 23 → 29 (−7), 29 ⇄ 71 (+11 / −5),
+                        23 → 79 (−25), 79 ⇄ 61 (+5 / −2), 61 → 31 (−3),
+                        31 → 67, 67 → 61
+    Phase 3 (emit):     23 → 41 (−5), 41 → 43 (+2), 43 ⇄ 53 (hop / −7,+11),
+                        41 ⇄ 97 (−11,+7 / −3), 97 → 1,
+                        node 1 self-loop: −7, −11, −2^10 (f36-f38),
+                        node 1 → 89 (f40: RE-SEED for the next digit)
+
+The f40 re-seed confirms OEIS A399511's self-seeding (a(777) = 2^3·89): the
+machine computes each digit starting from 2^(previous digit)·89 — the seed
+exponent is the previous DIGIT VALUE, not the digit position.
+
+Empirical loop structure of the digit-1 run (seed 89·2^1): the run is a
+CHAIN of unary accumulate 4-cycles — (net 11 += 1) for the first 2.65×10^8
+steps (6.6×10^7 iterations), then (net 7 += 1) — with the shared
+2-register PUMPING deterministically between 0 and ~8192 with period
+~10.5M steps (measured: exp2(t) plot, .scratch/k1-exp2.png).  Loop exits
+occur at the drain bottoms via the branch arrows (node 23: f1 needs 2·23,
+f2 needs 7·23; node 61: f12 needs 2·61, f13 needs 3·61).  A 10^11-step run
+with per-10^9 state snapshots is measuring the full chain of loop sizes
+(.scratch/k1-states-1e9.txt).
+
 ## The open discrepancy
 
 Per KMW's proof, the second digit needs only E ≈ 4096 (their bound

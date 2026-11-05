@@ -185,7 +185,7 @@ static int pure_power(int *idx_out, long long *exp_out) {
 int main(int argc, char **argv) {
     const char *progfile = NULL, *seed = NULL;
     unsigned long long steps = 0, progress = 0, stateEvery = 0;
-    int dump = 0;
+    int dump = 0, rle = 0;
 
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--program") && i + 1 < argc) progfile = argv[++i];
@@ -193,6 +193,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--steps") && i + 1 < argc) steps = strtoull(argv[++i], NULL, 10);
         else if (!strcmp(argv[i], "--progress") && i + 1 < argc) progress = strtoull(argv[++i], NULL, 10);
         else if (!strcmp(argv[i], "--state-every") && i + 1 < argc) stateEvery = strtoull(argv[++i], NULL, 10);
+        else if (!strcmp(argv[i], "--rle")) rle = 1;
         else if (!strcmp(argv[i], "--dump-states")) dump = 1;
         else { fprintf(stderr, "unknown arg %s\n", argv[i]); return 2; }
     }
@@ -210,6 +211,8 @@ int main(int argc, char **argv) {
 
     unsigned long long step = 0;
     int halted = 0;
+    int rleIndex = -1, rleCount = 0;
+    unsigned long long rleStart = 0;
     while (step < steps) {
         int fired = -1;
         for (int i = 0; i < nfracs; i++) {
@@ -224,6 +227,16 @@ int main(int argc, char **argv) {
         for (int t = 0; t < f->nden; t++) exponents[f->den[t].idx] -= f->den[t].exp;
         for (int t = 0; t < f->nnum; t++) exponents[f->num[t].idx] += f->num[t].exp;
         step++;
+
+        /* run-length encoding of the fired-fraction sequence: the loop
+         * structure of the program is visible in the runs */
+        if (rle) {
+            if (rleIndex == fired && rleCount) rleCount++;
+            else {
+                if (rleCount) printf("r %llu %d %llu\n", rleStart, rleIndex + 1, rleCount);
+                rleIndex = fired; rleCount = 1; rleStart = step;
+            }
+        }
 
         if (dump) {
             printf("n %llu", step);
@@ -250,6 +263,7 @@ int main(int argc, char **argv) {
             printf("progress %llu\n", step);
     }
     printf("%s %llu\n", halted ? "halt" : "cap", step);
+    if (rle && rleCount) printf("r %llu %d %llu\n", rleStart, rleIndex + 1, rleCount);
     printf("done %llu\n", step);
     return 0;
 }
