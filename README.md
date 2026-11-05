@@ -187,6 +187,22 @@ off, the engines in `core.js` are the tested ground truth.
 python3 tools/build_examples.py && python3 tools/oracle.py && node tests/run_tests.cjs
 ```
 
+## A fast C simulator for long searches
+
+`tools/fractran_sim.c` is a factor-vector simulator in C (~10⁸ steps/s on
+this VM, vs ~10⁶/s for the Python oracle — used for the PIGAME
+digit searches, where the published bound was 10⁶ steps).  It is *not*
+used by the app or the test suite; it exists for long unattended runs, and
+it is verified before it is trusted: its trajectory under PIGAME from 1
+matches OEIS A399511's b-file for all 1000 published states, and the Python
+oracle remains the semantics owner.
+
+```
+gcc -O2 -o .scratch/fractran_sim tools/fractran_sim.c
+.scratch/fractran_sim --program .scratch/pigame.frac --seed "89" \
+    --steps 775 --dump-states        # states; "power 775 2 3" at the digit
+```
+
 ## File map
 
 ```
