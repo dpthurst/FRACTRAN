@@ -104,7 +104,7 @@ computationally — see below):
   grows like $1024^n$.  Empirically: the seed convention is $89\cdot 2^k$
   for digit $k$, the OEIS record shows the *second* digit taking more than
   $10^6$ steps with 150,000-digit intermediates, and our C-simulator
-  searches exceeded $3\times 10^8$ steps for each of $89\cdot 2^1$ and
+  searches exhausted $10^{11}$ steps for each of $89\cdot 2^1$ and
   $89\cdot 2^2$ without reaching a power of two.  No published step count
   exists beyond the first digit — the app says so rather than implying
   otherwise.
