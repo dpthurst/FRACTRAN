@@ -199,6 +199,22 @@ check('chips: prime shown with the name',
   /2\s*input a/.test(await page.textContent('#registers')),
   (await page.textContent('#registers')).slice(0, 60));
 
+// the two switches are visually distinct (colour) and captioned
+const switchInfo = await page.evaluate(() => {
+  const cs = (sel) => getComputedStyle(document.querySelector(sel));
+  return {
+    labels: [...document.querySelectorAll('.switch-label')].map((e) => e.textContent.trim()),
+    engineBg: cs('#engineToggle button.on').backgroundColor,
+    dispBg: cs('#dispToggle button.on').backgroundColor,
+  };
+});
+check('header: two captioned switches', switchInfo.labels.join('|') === 'computes with|shows values as',
+  JSON.stringify(switchInfo.labels));
+check('header: the two switches are visually distinct',
+  switchInfo.engineBg !== switchInfo.dispBg,
+  `${switchInfo.engineBg} vs ${switchInfo.dispBg}`);
+await page.locator('#topbar').screenshot({ path: OUT + '8-switches.png' });
+
 check('no console errors across the whole click-through', errors.length === 0,
   errors.join('; '));
 

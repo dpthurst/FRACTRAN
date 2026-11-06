@@ -35,18 +35,27 @@ html, body {
 #topbar .sub { color: var(--dim); font-weight: 400; }
 #topbar .tagline { color: var(--dim); font-size: 12px; }
 #topbar .cite { font-style: italic; }
-#engineToggle { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-#engineToggle button {
+/* ---------- the two top-bar switches: computation vs display ---------- */
+
+.switchgroup { display: inline-flex; flex-direction: column; gap: 1px; }
+.switch-label {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--dim); padding-left: 2px; line-height: 1;
+}
+.switchgroup[data-kind="compute"] .switch-label { color: var(--accent2); }
+.switchgroup[data-kind="display"] .switch-label { color: var(--accent); }
+
+.switch { display: inline-flex; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+.switch button {
   background: transparent; color: var(--dim); border: 0;
   padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12px;
 }
-#engineToggle button.on { background: var(--accent2); color: #10202c; font-weight: 600; }
-#dispToggle { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-#dispToggle button {
-  background: transparent; color: var(--dim); border: 0;
-  padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12px;
-}
-#dispToggle button.on { background: var(--accent); color: #241703; font-weight: 600; }
+.switchgroup[data-kind="compute"] .switch { border-color: #2c4b63; }
+.switchgroup[data-kind="display"] .switch { border-color: #5c4a24; }
+.switchgroup[data-kind="compute"] .switch button.on { background: var(--accent2); color: #10202c; font-weight: 600; }
+.switchgroup[data-kind="display"] .switch button.on { background: var(--accent); color: #241703; font-weight: 600; }
+.switchgroup[data-kind="compute"] .switch button:hover:not(.on) { color: var(--accent2); }
+.switchgroup[data-kind="display"] .switch button:hover:not(.on) { color: var(--accent); }
 #inputEcho { font: 11.5px var(--mono); color: var(--dim); min-height: 15px; margin: -4px 0 8px; }
 
 /* ---------- layout ---------- */

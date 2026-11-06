@@ -61,10 +61,18 @@ python3 -m http.server 8000     # then http://localhost:8000
   that drops to zero becomes an empty row rather than disappearing, so a run
   like PRIMEGAME does not flicker; rows the last fired fraction touched are
   underlined.
-- **Numbers / factors (top):** a global display toggle — every *value* on the
-  page switches between its decimal form and its prime factorization: the
-  fraction strip, the current `n`, and the parsed input.  (The editor keeps
-  the program as written; the summarized strip is what changes.)
+- **Computes with (top, blue):** *internal arithmetic*, not appearance.  *big
+  integer n* keeps n as one number and does **nothing but divide**: test
+  `n % den`, then `n → n/den·num` (Conway's definition verbatim; no
+  factorization anywhere in the engine, event checks divide by the event's
+  own primes, and the register panel is a display-layer view).  *prime
+  exponents* keeps n as its prime factorization — the counter-machine view,
+  one register per exponent.  Both run the same program and give the same
+  results; switching restarts the run.
+- **Shows values as (top, amber):** *display only* — it changes nothing about
+  the computation.  Every value on the page — the fraction strip, the current
+  `n`, the parsed input — prints either as a decimal number or as its prime
+  factorization.
 - **Chart:** log₁₀ n over steps. The shaded band spans every value in each
   pixel column (PRIMEGAME's oscillation is the point), the bright line is the
   upper envelope, orange dots mark events, and the left edge carries the
@@ -80,13 +88,6 @@ python3 -m http.server 8000     # then http://localhost:8000
   factorization with precomputed log₁₀ of each prime (no integer is ever
   rebuilt — rebuilding a 50,000-digit n would cost ~0.8 ms *per step*),
   and in arithmetic mode from `n` directly via its leading bits.
-- **Engine toggle (top):** two equivalent implementations, switchable live:
-  - *arithmetic* — works directly on the big integer `n` and does **nothing
-    but divide**: test `n % den`, then `n → n/den·num`. No factorization
-    anywhere in the engine; event checks divide by the event's own primes.
-    (The register panel is a display-layer view maintained by the UI.)
-  - *registers* — stores `n` as its prime factorization, the counter-machine
-    view where each exponent is a register.
 
 ## The example library
 
@@ -153,7 +154,7 @@ Three independent layers, all reproducible from the repo:
 4. **`tests/dom-smoke.cjs`** — loads the actual page into jsdom, evaluates
    the very scripts a browser would, and clicks through the UI: the library
    renders all 17 examples, stepping updates the displayed `n` (2 → 15 in
-   PRIMEGAME), run/pause respects the speed setting, the engine toggle
+   PRIMEGAME), run/pause respects the speed setting, the compute switch
    resets, loading the adder and stepping to its halt shows the decoded
    output, and Back undoes a step. Needs jsdom, deliberately not a repo
    dependency: `npm i --prefix .scratch/js jsdom` (skipped loudly when

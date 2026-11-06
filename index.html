@@ -4,24 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FRACTRAN playground</title>
-<link rel="stylesheet" href="style.css?v=2026-11-06T14:08Z">
+<link rel="stylesheet" href="style.css?v=2026-11-06T14:27Z">
 </head>
 <body>
 <header id="topbar">
   <h1>FRACTRAN <span class="sub">playground</span></h1>
-  <div id="engineToggle" title="Two equivalent engines. 'Arithmetic' works
-    directly on the big integer n and nothing but division — test n % den,
-    then n → n/den·num: Conway's definition, verbatim. 'Registers' stores n
-    as its prime factorization — the counter-machine view. Switching resets
-    the run.">
-    <button data-engine="arith" class="on">arithmetic&nbsp;n</button>
-    <button data-engine="fact">registers&nbsp;p^e</button>
+  <div class="switchgroup" data-kind="compute">
+    <span class="switch-label" id="engineLabel">computes with</span>
+    <div id="engineToggle" class="switch" role="group" aria-labelledby="engineLabel"
+         title="INTERNAL ARITHMETIC — how the machine works, not how it looks.
+    'big integer n' keeps n as one number and does nothing but test n % den and
+    multiply n/den·num: Conway's definition, verbatim.  'prime exponents'
+    keeps n as its factorization (the counter-machine view).  Both run exactly
+    the same program and give the same results.  Switching restarts the run.">
+      <button data-engine="arith" class="on">big&nbsp;integer&nbsp;n</button>
+      <button data-engine="fact">prime&nbsp;exponents</button>
+    </div>
   </div>
-  <div id="dispToggle" title="Switch every displayed value between plain numbers
-    and its prime factorization: the fraction strip, the current n, and the
-    parsed input.">
-    <button data-disp="number" class="on">numbers</button>
-    <button data-disp="factors">factors</button>
+  <div class="switchgroup" data-kind="display">
+    <span class="switch-label" id="dispLabel">shows values as</span>
+    <div id="dispToggle" class="switch" role="group" aria-labelledby="dispLabel"
+         title="DISPLAY ONLY — changes nothing about the computation.  Every
+    value on the page (the fraction strip, the current n, the parsed input)
+    is printed either as a decimal number or as its prime factorization.">
+      <button data-disp="number" class="on">numbers</button>
+      <button data-disp="factors">prime&nbsp;factors</button>
+    </div>
   </div>
   <div class="tagline">multiply n by the first fraction that keeps it integral;
     halt when none does <span class="cite">(Conway 1987)</span></div>
@@ -103,11 +111,11 @@ events:     # event: pow(2)             n a pure power of 2
   language for arithmetic</em> (1987). Example sources are named per program;
   every published program here is verified computationally by
   <code>tools/oracle.py</code> (see README).
-  <span id="build" class="build">2026-11-06T14:08Z</span>
+  <span id="build" class="build">2026-11-06T14:27Z</span>
 </footer>
 
-<script src="core.js?v=2026-11-06T14:08Z"></script>
-<script src="examples.js?v=2026-11-06T14:08Z"></script>
-<script src="app.js?v=2026-11-06T14:08Z"></script>
+<script src="core.js?v=2026-11-06T14:27Z"></script>
+<script src="examples.js?v=2026-11-06T14:27Z"></script>
+<script src="app.js?v=2026-11-06T14:27Z"></script>
 </body>
 </html>

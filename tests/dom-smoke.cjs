@@ -511,6 +511,28 @@ function check(label, cond, detail) {
     click(window.document.querySelector('#regMode button[data-mode="chips"]'));
   }
 
+  // ---- the two top-bar switches must say what they control ----
+  {
+    const labels = [...window.document.querySelectorAll(".switch-label")].map((e) => e.textContent.trim());
+    check("compute switch is labelled as such", labels[0] === "computes with", JSON.stringify(labels));
+    check("display switch is labelled as such", labels[1] === "shows values as", JSON.stringify(labels));
+    check("the compute switch is a named group for assistive tech",
+      $("engineToggle").getAttribute("role") === "group"
+      && $("engineToggle").getAttribute("aria-labelledby") === "engineLabel");
+    check("the display switch is a named group for assistive tech",
+      $("dispToggle").getAttribute("role") === "group"
+      && $("dispToggle").getAttribute("aria-labelledby") === "dispLabel");
+    const btnText = (sel) => [...$(sel).querySelectorAll("button")]
+      .map((b) => b.textContent.replace(/\u00a0/g, " ").trim()).join("|");
+    check("compute options name the arithmetic",
+      btnText("engineToggle") === "big integer n|prime exponents", btnText("engineToggle"));
+    check("display options name the formatting",
+      btnText("dispToggle") === "numbers|prime factors", btnText("dispToggle"));
+    check("each switch's tooltip states compute-vs-display",
+      /INTERNAL ARITHMETIC/.test($("engineToggle").getAttribute("title"))
+      && /DISPLAY ONLY/.test($("dispToggle").getAttribute("title")));
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);
 })().catch((e) => { console.log("FAIL smoke crashed: " + (e && e.stack || e)); process.exit(1); });
