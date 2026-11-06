@@ -287,6 +287,54 @@ for (const ex of EXAMPLES) {
     norm(parsed) === norm(want), `parsed=${norm(parsed)} want=${norm(want)}`);
 }
 
+// ---------------- log10 helpers (the chart's per-step cost) ----------------
+
+{
+  // log10Approx: exact to double precision, for 2^k and for mixed numbers
+  let ok = true, worst = 0;
+  for (let k = 0; k <= 5000; k += 37) {
+    const n = 2n ** BigInt(k);
+    const want = k * Math.log10(2);
+    const got = C.log10Approx(n);
+    const err = Math.abs(got - want) / Math.max(1, Math.abs(want));
+    worst = Math.max(worst, err);
+    if (err > 1e-12) ok = false;
+  }
+  check("log10Approx is exact for 2^k up to k=5000", ok, `worst rel err ${worst.toExponential(2)}`);
+
+  const mixed = 3n ** 200n * 7n ** 50n;
+  const wantMixed = 200 * Math.log10(3) + 50 * Math.log10(7);
+  check("log10Approx is exact for a mixed product",
+    Math.abs(C.log10Approx(mixed) - wantMixed) < 1e-9,
+    `${C.log10Approx(mixed)} vs ${wantMixed}`);
+
+  // log10OfFact: dot product over the factorization must equal log10 of the
+  // reconstructed integer (this is what the registers-mode chart uses)
+  let agree = true, checked = 0, worstFact = 0;
+  for (const ex of EXAMPLES) {
+    const prog = C.parseProgram(ex.program);
+    let st = C.newFactState(C.parseInput(ex.input));
+    for (let k = 0; k < 40 && !st.halted; k++) {
+      const want = Math.log10(Number(C.factToN(st.fact)));
+      const got = C.log10OfFact(st.fact);
+      const err = Math.abs(got - want);
+      worstFact = Math.max(worstFact, err);
+      if (err > 1e-6) { agree = false; }
+      checked++;
+      st = C.factStep(prog, st);
+    }
+  }
+  check("log10OfFact agrees with log10 of the reconstructed n",
+    agree && checked > 100, `checked ${checked}, worst abs err ${worstFact.toExponential(2)}`);
+
+  // and for a big-exponent state, where rebuilding n is most expensive
+  const bigFact = new Map([[17n, 720], [3n, 5]]);
+  const wantBig = 720 * Math.log10(17) + 5 * Math.log10(3);
+  check("log10OfFact is exact for a large exponent",
+    Math.abs(C.log10OfFact(bigFact) - wantBig) < 1e-9,
+    `${C.log10OfFact(bigFact)} vs ${wantBig}`);
+}
+
 // ---------------- summary ----------------
 
 console.log(`\n${passed} passed, ${failed} failed`);

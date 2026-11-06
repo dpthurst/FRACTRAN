@@ -421,14 +421,35 @@ const FractranCore = (() => {
 
   // log10 of a BigInt, good to about half a digit (via the bit length).
   // Cheap enough to sample per step for the chart.
+  // log10 of n from its factorization, using precomputed log10 of each
+  // prime:  log10 n = Σ e_p · log10 p.  The registers engine holds exactly
+  // this map, so the chart never has to rebuild the integer n.
+  const PRIME_LOG10 = new Map();
+  function log10OfPrime(p) {
+    const key = String(p);
+    let v = PRIME_LOG10.get(key);
+    if (v === undefined) { v = Math.log10(Number(p)); PRIME_LOG10.set(key, v); }
+    return v;
+  }
+
+  function log10OfFact(fact) {
+    let s = 0;
+    for (const [p, e] of fact) s += Number(e) * log10OfPrime(p);
+    return s;
+  }
+
   // log10 of a BigInt, accurate to double precision: scale by the bit length,
-  // then take log10 of the top 53 bits.  (bit_length * log10(2) alone is off
-  // by up to 0.3 — visible as dots and readouts sitting slightly too high.)
+  // then take log10 of the top 53 bits.  The bit length comes from the hex
+  // digits (4× shorter than binary) and the leading digit's bit count.
+  // (bit_length * log10(2) alone is off by up to 0.3.)
   function log10Approx(n) {
     if (n <= 0n) return 0;
-    const bits = n.toString(2).length;
+    const hex = n.toString(16);
+    if (hex.length <= 13) return Math.log10(Number(n));
+    const lead = parseInt(hex[0], 16);                 // 1..15
+    const bits = (hex.length - 1) * 4 + (32 - Math.clz32(lead));
     if (bits <= 53) return Math.log10(Number(n));
-    const top = Number(n >> BigInt(bits - 53));      // the leading 53 bits
+    const top = Number(n >> BigInt(bits - 53));        // the leading 53 bits
     return Math.log10(top) + (bits - 53) * Math.log10(2);
   }
 
@@ -437,7 +458,7 @@ const FractranCore = (() => {
     parseProgram, parseInput,
     newArithState, arithStep, newFactState, factStep, factToN,
     evalEventN, evalEventFact, nextFiredIndex, chartGeometry, factToString,
-    nToStringTruncated, log10Approx,
+    nToStringTruncated, log10Approx, log10OfFact,
   };
 
 })();

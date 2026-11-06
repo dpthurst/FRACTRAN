@@ -75,8 +75,11 @@ python3 -m http.server 8000     # then http://localhost:8000
   stretching step axis; the axis spans the event values too, so no dot is
   ever clamped onto an edge. Geometry is computed by a pure, unit-tested
   function (`core.js` `chartGeometry`) that keeps every coordinate finite and
-  inside the box for any canvas size and any data, and `log10Approx` is
-  accurate to double precision (a bit-length estimate was off by up to 0.3).
+  inside the box for any canvas size and any data. The log itself is
+  computed per engine: in registers mode it is a dot product over the
+  factorization with precomputed log₁₀ of each prime (no integer is ever
+  rebuilt — rebuilding a 50,000-digit n would cost ~0.8 ms *per step*),
+  and in arithmetic mode from `n` directly via its leading bits.
 - **Engine toggle (top):** two equivalent implementations, switchable live:
   - *arithmetic* — works directly on the big integer `n` and does **nothing
     but divide**: test `n % den`, then `n → n/den·num`. No factorization

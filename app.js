@@ -113,8 +113,16 @@
       // the log10 of n at the moment the event fired: the chart pins each
       // event dot to this, so dots stay at their own value instead of
       // drifting with the pixel column's running maximum
-      log10: st ? C.log10Approx(nOf(st)) : 0,
+      log10: st ? log10Of(st) : 0,
     });
+  }
+
+  // The chart's log value for the current state.  In registers mode it is a
+  // dot product over the factorization (no bigint rebuild); in arithmetic
+  // mode the engine holds n itself, so take its log directly.
+  function log10Of(state) {
+    if (!state) return 0;
+    return state.kind === "fact" ? C.log10OfFact(state.fact) : C.log10Approx(state.n);
   }
 
   // Event check for the current state, per engine.  Callers only consult
@@ -164,12 +172,12 @@
       }
     }
     if (chart.length === 0 || chart[chart.length - 1].step !== st.step) {
-      chart.push({ step: st.step, log10: C.log10Approx(nOf(st)) });
+      chart.push({ step: st.step, log10: log10Of(st) });
     }
     if (history.length < HISTORY_CAP) history.push(snapshot());
     st = stepFn()(prog, st);
     if (chart.length === 0 || chart[chart.length - 1].step !== st.step) {
-      const v = C.log10Approx(nOf(st));
+      const v = log10Of(st);
       chart.push({ step: st.step, log10: v, log10Min: v });
       if (chart.length > 4000) {           // decimate: keep the envelope shape
         const nc = [];
