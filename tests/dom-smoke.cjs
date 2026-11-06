@@ -51,6 +51,7 @@ const mkCtx = () => ({
   moveTo(x, y) { drawn.push(["move", x, y]); },
   lineTo(x, y) { drawn.push(["line", x, y]); },
   stroke() {}, arc(x, y, r) { drawn.push(["arc", x, y, r]); },
+  fillRect(x, y, w2, h2) { drawn.push(["rect", x, y, w2, h2]); },
   fill() {}, fillText(t, x, y) { drawn.push(["text", t, x, y]); },
   strokeStyle: "", fillStyle: "", lineWidth: 1, font: "",
 });
@@ -156,9 +157,16 @@ function check(label, cond, detail) {
     && /axis [\d.]+ … [\d.]+/.test($("chartNote").textContent),
     $("chartNote").textContent);
   {
-    const bad = drawn.filter((d) => d.length >= 3
-      && d.slice(1, 3).some((v) => typeof v === "number" && (!Number.isFinite(v) || v < 0 || v > 800))
-      || (d.length >= 3 && typeof d[2] === "number" && d[0] !== "text" && d[2] > 180));
+    const bad = drawn.filter((d) => {
+      if (d[0] === "rect") {                       // x, y, w, h
+        const [, x, y, w2, h2] = d;
+        return [x, y, w2, h2].some((v) => !Number.isFinite(v))
+          || x < 0 || y < 0 || x + w2 > 800 || y + h2 > 180 || w2 < 0 || h2 < 0;
+      }
+      if (d[0] === "text") return false;           // labels sit on the axis
+      const [, x, y] = d;
+      return !Number.isFinite(x) || !Number.isFinite(y) || x < 0 || x > 800 || y < 0 || y > 180;
+    });
     check("chart: every drawn coordinate is finite and inside the canvas",
       drawn.length > 0 && bad.length === 0,
       `${drawn.length} ops, ${bad.length} outside: ${JSON.stringify(bad.slice(0, 3))}`);

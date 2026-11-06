@@ -616,14 +616,14 @@
       ctx.fillText(v.toFixed(1), 2, Math.min(h - 2, Math.max(9, y + 3)));
     }
 
-    // the band: the full range of n within each pixel column
-    ctx.strokeStyle = "rgba(111,195,255,0.35)";
-    ctx.beginPath();
+    // the band: the full range of n within each pixel column, as one filled
+    // rect per column (half the ops of stroking a 1px line, and cheaper)
+    ctx.fillStyle = "rgba(111,195,255,0.30)";
     for (const c of geo.cols) {
-      ctx.moveTo(c.x, clampY(c.yMin));
-      ctx.lineTo(c.x, clampY(c.yMax));
+      const y0 = clampY(c.yMin), y1 = clampY(c.yMax);
+      if (y1 - y0 < 0.5) continue;
+      ctx.fillRect(c.x - 0.5, y0, 1, y1 - y0);
     }
-    ctx.stroke();
 
     // the upper envelope
     ctx.strokeStyle = "#6fc3ff";
