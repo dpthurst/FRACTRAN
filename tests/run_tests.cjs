@@ -194,6 +194,37 @@ check("parse: reduces 22/6 to 11/3", (() => {
   check("chart geometry: NaN/Infinity dropped", hostile.cols.every((c) =>
     Number.isFinite(c.yMin) && Number.isFinite(c.yMax)));
 
+  // decimation must keep BOTH extremes: taking only the max raises the band's
+  // lower edge a little every time the series is halved
+  {
+    let series = [];
+    let tMin = Infinity, tMax = -Infinity;
+    for (let i = 0; i < 100000; i++) {
+      const v = 5 + 3 * Math.sin(i / 7);
+      tMin = Math.min(tMin, v); tMax = Math.max(tMax, v);
+      series.push({ step: i, log10: v, log10Min: v });
+      if (series.length > 4000) {
+        const nc = [];
+        for (let k = 0; k + 1 < series.length; k += 2) {
+          nc.push({ step: series[k].step,
+                    log10: Math.max(series[k].log10, series[k + 1].log10),
+                    log10Min: Math.min(series[k].log10Min, series[k + 1].log10Min) });
+        }
+        series = nc;
+      }
+    }
+    const lo = Math.min(...series.map((p) => p.log10Min));
+    const hi = Math.max(...series.map((p) => p.log10));
+    check("decimation preserves the band's low extreme", Math.abs(lo - tMin) < 1e-9,
+      `${lo} vs ${tMin}`);
+    check("decimation preserves the band's high extreme", Math.abs(hi - tMax) < 1e-9,
+      `${hi} vs ${tMax}`);
+    const g = C.chartGeometry(series, 800, 180, 6);
+    check("geometry uses the preserved band extremes",
+      Math.abs(g.lo - tMin) < 1e-9 && Math.abs(g.hi - tMax) < 1e-9,
+      `${g.lo}..${g.hi}`);
+  }
+
   // the band is a real range: across the columns, the lowest and highest
   // values must both survive (this is the property the old max-only chart
   // lacked — it kept the maximum and threw the low values away)

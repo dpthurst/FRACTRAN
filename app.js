@@ -169,12 +169,17 @@
     if (history.length < HISTORY_CAP) history.push(snapshot());
     st = stepFn()(prog, st);
     if (chart.length === 0 || chart[chart.length - 1].step !== st.step) {
-      chart.push({ step: st.step, log10: C.log10Approx(nOf(st)) });
+      const v = C.log10Approx(nOf(st));
+      chart.push({ step: st.step, log10: v, log10Min: v });
       if (chart.length > 4000) {           // decimate: keep the envelope shape
         const nc = [];
         for (let i = 0; i + 1 < chart.length; i += 2) {
+          // keep BOTH extremes: taking only the max would raise the band's
+          // lower edge every time the series is decimated
           nc.push({ step: chart[i].step,
-                    log10: Math.max(chart[i].log10, chart[i + 1].log10) });
+                    log10: Math.max(chart[i].log10, chart[i + 1].log10),
+                    log10Min: Math.min(chart[i].log10Min ?? chart[i].log10,
+                                       chart[i + 1].log10Min ?? chart[i + 1].log10) });
         }
         chart = nc;
       }

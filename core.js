@@ -361,11 +361,14 @@ const FractranCore = (() => {
 
     let lo = Infinity, hi = -Infinity, maxStep = 1;
     let finite = false;
+    const pMin = (p) => (Number.isFinite(p.log10Min) ? p.log10Min : p.log10);
     for (const p of points) {
       if (!Number.isFinite(p.log10) || !Number.isFinite(p.step)) continue;
       finite = true;
       if (p.log10 < lo) lo = p.log10;
       if (p.log10 > hi) hi = p.log10;
+      const m = pMin(p);
+      if (m < lo) lo = m;
       if (p.step > maxStep) maxStep = p.step;
     }
     if (!finite) return geo;
@@ -377,8 +380,12 @@ const FractranCore = (() => {
       if (!Number.isFinite(p.log10) || !Number.isFinite(p.step)) continue;
       const c = Math.min(width - 1, Math.max(0, Math.floor(geo.xOf(p.step))));
       const b = buckets[c];
-      if (!b) buckets[c] = { vMin: p.log10, vMax: p.log10 };
-      else { if (p.log10 < b.vMin) b.vMin = p.log10; if (p.log10 > b.vMax) b.vMax = p.log10; }
+      const m = pMin(p);
+      if (!b) buckets[c] = { vMin: m, vMax: p.log10 };
+      else {
+        if (p.log10 > b.vMax) b.vMax = p.log10;
+        if (m < b.vMin) b.vMin = m;
+      }
     }
     for (let c = 0; c < width; c++) {
       const b = buckets[c];
