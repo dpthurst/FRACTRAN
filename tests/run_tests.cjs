@@ -225,6 +225,61 @@ check("parse: reduces 22/6 to 11/3", (() => {
       `${g.lo}..${g.hi}`);
   }
 
+  // spans: one coarse entry must paint its whole x-range, not a single column
+  {
+    const spans = [
+      { s0: 0, s1: 99, lo: 1, hi: 9 },        // coarse, covers a fifth of the axis
+      { s0: 100, s1: 199, lo: 2, hi: 3 },
+      { s0: 200, s1: 299, lo: 5, hi: 6 },
+      { s0: 300, s1: 399, lo: 4, hi: 7 },
+      { s0: 400, s1: 499, lo: 2, hi: 8 },
+    ];
+    const g = C.chartGeometry(spans, 500, 100, 6);
+    check("span covering a fifth of the axis paints its whole range",
+      g.cols.length >= 480, `${g.cols.length} columns (500 minus padding)`);
+    check("span extrema survive into the columns",
+      Math.abs(g.lo - 1) < 1e-9 && Math.abs(g.hi - 9) < 1e-9, `${g.lo}..${g.hi}`);
+    const firstCols = g.cols.filter((c) => c.x < 100);
+    check("the first span's vertical extent is present across its range",
+      firstCols.length > 80
+      && firstCols.every((c) => Math.abs(c.vMin - 1) < 1e-9 && Math.abs(c.vMax - 9) < 1e-9),
+      `${firstCols.length} cols, e.g. ${firstCols[0] && firstCols[0].vMin}..${firstCols[0] && firstCols[0].vMax}`);
+  }
+
+  // a sawtooth decimated into spans must still show its teeth: the vertical
+  // extent of the drawn band must stay close to the true one at every scale
+  {
+    let series = [];
+    let tMin = Infinity, tMax = -Infinity;
+    // y(t) = t mod 10, scaled: a sawtooth with period 10 steps
+    for (let t = 0; t < 200000; t++) {
+      const v = (t % 10) + 100 * (t / 200000);
+      tMin = Math.min(tMin, v); tMax = Math.max(tMax, v);
+      series.push({ s0: t, s1: t, lo: v, hi: v });
+      if (series.length > 6000) {
+        const nc = [];
+        for (let k = 0; k + 1 < series.length; k += 2) {
+          nc.push({ s0: series[k].s0, s1: series[k + 1].s1,
+                    lo: Math.min(series[k].lo, series[k + 1].lo),
+                    hi: Math.max(series[k].hi, series[k + 1].hi) });
+        }
+        if (series.length % 2) nc.push(series[series.length - 1]);
+        series = nc;
+      }
+    }
+    const g = C.chartGeometry(series, 800, 180, 6);
+    // the plot box excludes the padding; inside it every column must be painted
+    const inBox = g.cols.filter((c) => c.x > 6 && c.x < 794);
+    check("decimated sawtooth: every column in the plot box is painted",
+      inBox.length >= 780, `${inBox.length} painted between the padding`);
+    // the teeth must survive as vertical extent.  The newest samples are
+    // full-resolution, so only the decimated (left/middle) part is checked.
+    const decimated = g.cols.filter((c) => c.x < 700);
+    const narrow = decimated.filter((c) => c.vMax - c.vMin < 3);
+    check("decimated sawtooth: teeth survive as vertical extent",
+      narrow.length === 0, `${narrow.length} of ${decimated.length} columns span < 3 units`);
+  }
+
   // the band is a real range: across the columns, the lowest and highest
   // values must both survive (this is the property the old max-only chart
   // lacked — it kept the maximum and threw the low values away)
@@ -333,6 +388,45 @@ for (const ex of EXAMPLES) {
   check("log10OfFact is exact for a large exponent",
     Math.abs(C.log10OfFact(bigFact) - wantBig) < 1e-9,
     `${C.log10OfFact(bigFact)} vs ${wantBig}`);
+}
+
+// ---------------- chart series: uniform time buckets ----------------
+
+{
+  // 400k samples of a sawtooth with period 500, via the real series code
+  const period = 500;
+  const value = (t) => (t % period) + 50 * (t / 400000);
+  let trueMin = Infinity, trueMax = -Infinity;
+  const s = C.makeSeries(6000);
+  for (let t = 0; t < 400000; t++) {
+    const v = value(t);
+    trueMin = Math.min(trueMin, v); trueMax = Math.max(trueMax, v);
+    C.seriesAdd(s, t, v);
+  }
+  const buckets = s.buckets.filter(Boolean);
+  check("series: bucket count stays within the cap", buckets.length <= 6000,
+    String(buckets.length));
+  // widths must be uniform: the old whole-array merge left one bucket covering
+  // 91% of the run while the rest stayed at 1 step
+  const widths = buckets.map((b) => b.s1 - b.s0 + 1);
+  const wMin = Math.min(...widths), wMax = Math.max(...widths);
+  check("series: resolution is uniform in time (widths within 2x)",
+    wMax <= 2 * wMin, `widths ${wMin}..${wMax}`);
+  const covered = Math.max(...buckets.map((b) => b.s1 - b.s0 + 1)) / 400000;
+  check("series: no bucket swallows a large fraction of the run",
+    covered < 0.05, `largest bucket = ${(covered * 100).toFixed(1)}% of the run`);
+  // global extremes survive every merge
+  const lo = Math.min(...buckets.map((b) => b.lo));
+  const hi = Math.max(...buckets.map((b) => b.hi));
+  check("series: global extremes survive merging",
+    Math.abs(lo - trueMin) < 1e-9 && Math.abs(hi - trueMax) < 1e-9,
+    `${lo}..${hi} vs ${trueMin}..${trueMax}`);
+  // the teeth must survive: with 64-step buckets over a 500-step sawtooth each
+  // bucket's own range is large, so the drawn band keeps its full height
+  const narrow = buckets.filter((b) => b.hi - b.lo < period / 4);
+  check("series: a bucket's own range reflects the sawtooth (teeth kept)",
+    narrow.length < buckets.length * 0.05,
+    `${narrow.length} of ${buckets.length} buckets have a hairline range`);
 }
 
 // ---------------- summary ----------------

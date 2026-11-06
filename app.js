@@ -26,7 +26,8 @@
   let st = null;           // current engine state
   let engine = "arith";    // "arith" (direct BigInt n) | "fact" (factorization)
   let history = [];        // snapshots for Back
-  let chart = [];          // {step, log10} per step (sampled if huge)
+  let chart = [];          // spans {s0, s1, lo, hi} of log10 n
+  let lastLog10 = 0;       // most recent sample, for the live readout
   let events = [];         // interesting events fired so far
   let trace = [];          // recent steps for the trace table
   // Display-only factorization for the arithmetic engine (the engine itself
@@ -94,7 +95,8 @@
     }
     st = newState(n);
     inputN0 = n;
-    history = []; chart = []; events = []; trace = [];
+    history = []; series = C.makeSeries(6000); chart = []; events = []; trace = [];
+    lastLog10 = log10Of(st);
     displayFact = engine === "arith" ? tryFactor(n) : null;
     displayFactSkipped = false;
     firedQueue = [];
@@ -115,6 +117,18 @@
       // drifting with the pixel column's running maximum
       log10: st ? log10Of(st) : 0,
     });
+  }
+
+  // Chart series: uniform fixed-width time buckets (core.makeSeries), each
+  // holding the true [lo, hi] of log10 n over its steps.  Resolution stays
+  // uniform in time however long the run — the sawtooth survives as a band.
+  let series = C.makeSeries(6000);
+
+  function chartSample(step) {
+    const v = log10Of(st);
+    lastLog10 = v;
+    C.seriesAdd(series, step, v);
+    chart = series.buckets;
   }
 
   // The chart's log value for the current state.  In registers mode it is a
@@ -171,27 +185,10 @@
         if (!already) recordEvent(st.step, ev, spec);
       }
     }
-    if (chart.length === 0 || chart[chart.length - 1].step !== st.step) {
-      chart.push({ step: st.step, log10: log10Of(st) });
-    }
+    chartSample(st.step);
     if (history.length < HISTORY_CAP) history.push(snapshot());
     st = stepFn()(prog, st);
-    if (chart.length === 0 || chart[chart.length - 1].step !== st.step) {
-      const v = log10Of(st);
-      chart.push({ step: st.step, log10: v, log10Min: v });
-      if (chart.length > 4000) {           // decimate: keep the envelope shape
-        const nc = [];
-        for (let i = 0; i + 1 < chart.length; i += 2) {
-          // keep BOTH extremes: taking only the max would raise the band's
-          // lower edge every time the series is decimated
-          nc.push({ step: chart[i].step,
-                    log10: Math.max(chart[i].log10, chart[i + 1].log10),
-                    log10Min: Math.min(chart[i].log10Min ?? chart[i].log10,
-                                       chart[i + 1].log10Min ?? chart[i + 1].log10) });
-        }
-        chart = nc;
-      }
-    }
+    chartSample(st.step);
     if (engine === "arith" && st.fired !== null && st.fired !== undefined) {
       if (firedQueue.length >= VIEW_QUEUE_CAP) {
         displayFact = null; displayFactSkipped = true; firedQueue = [];
@@ -586,7 +583,7 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    if (!chart.length || w < 2 || h < 2) {
+    if (!chart.length || !chart.some(Boolean) || w < 2 || h < 2) {
       ctx.fillStyle = "#8a93a3";
       ctx.font = "12px system-ui, sans-serif";
       ctx.fillText("press run — log₁₀ n over steps; the band spans the values in each pixel column",
@@ -600,9 +597,9 @@
     // the series for scaling purposes, so the axis always spans them and no
     // dot is ever clamped onto the edge.  The bottom 14px are reserved for
     // the x-axis label.
-    const pts = chart.concat(
+    const pts = chart.filter(Boolean).concat(
       events.filter((e) => Number.isFinite(e.log10))
-            .map((e) => ({ step: e.step, log10: e.log10 })));
+            .map((e) => ({ s0: e.step, s1: e.step, lo: e.log10, hi: e.log10 })));
     const geo = C.chartGeometry(pts, w, h - 14, 6);
     const clampY = (y) => Math.max(geo.pad, Math.min(h - geo.pad, y));
 
@@ -649,7 +646,7 @@
       ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
     }
 
-    const cur = chart[chart.length - 1].log10;
+    const cur = lastLog10;
     // x-axis label, centred in the reserved strip
     ctx.fillStyle = "#9aa5b5";
     ctx.font = "10px system-ui, sans-serif";
@@ -713,6 +710,7 @@
     } else {
       st = { kind: "fact", fact: h.fact, n: null, step: h.step, fired: h.fired, halted: false };
     }
+    lastLog10 = log10Of(st);
     render();
   }
 

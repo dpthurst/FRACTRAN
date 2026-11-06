@@ -73,15 +73,19 @@ python3 -m http.server 8000     # then http://localhost:8000
   the computation.  Every value on the page — the fraction strip, the current
   `n`, the parsed input — prints either as a decimal number or as its prime
   factorization.
-- **Chart:** log₁₀ n over steps. The shaded band spans every value in each
-  pixel column (PRIMEGAME's oscillation is the point), the bright line is the
-  upper envelope, orange dots mark events, and the left edge carries the
-  actual axis values plus a live "log₁₀ n = … now" readout — the vertical
-  position alone never has to be guessed at. Event dots are pinned to the
-  value the event had when it fired (recorded at event time), so as the run
-  continues they keep their own height and only slide left smoothly with the
-  stretching step axis; the axis spans the event values too, so no dot is
-  ever clamped onto an edge. Geometry is computed by a pure, unit-tested
+- **Chart:** log₁₀ n over steps, kept in **uniform fixed-width time
+  buckets** (`core.makeSeries`): each bucket holds the true min and max of
+  log₁₀ n over its steps, and when the run outgrows the grid the bucket width
+  doubles so every bucket stays the same width. That matters: an earlier
+  scheme merged *the whole array* whenever it filled, which halved the
+  earliest data again and again (one measured 400k-step run had its very
+  first entry covering 91% of the run) and summarised away exactly the early
+  detail — Kilminster's sawtooth vanished once the primes got large. Now the
+  teeth survive at any run length, drawn as a band with the upper envelope on
+  top, orange dots at events, real axis values at the left and a live
+  "log₁₀ n = … now" readout. Event dots are pinned to the value the event had
+  when it fired, and the axis spans the event values too, so no dot is
+  clamped onto an edge. Geometry is computed by a pure, unit-tested
   function (`core.js` `chartGeometry`) that keeps every coordinate finite and
   inside the box for any canvas size and any data. The log itself is
   computed per engine: in registers mode it is a dot product over the

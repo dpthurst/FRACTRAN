@@ -344,6 +344,60 @@ const FractranCore = (() => {
   // column, so the chart can show a band (the true range of n) instead of a
   // maximum only — a maximum-only line over PRIMEGAME's oscillation runs
   // along the top and makes the dips look like they leave the plot.
+  // ---------------- chart series (uniform time buckets) ----------------
+  //
+  // A series is a grid of fixed-width time buckets, each holding the true
+  // [lo, hi] of the value over its steps.  When the run outgrows the grid the
+  // bucket width doubles and adjacent buckets merge, so resolution stays
+  // UNIFORM in time.  (Merging "the whole array whenever it is full" halves
+  // the earliest data again and again — one measured run had its first entry
+  // covering 91% of 400k steps, which is what destroys an early sawtooth.)
+  function makeSeries(maxBuckets) {
+    return { w: 1, buckets: [], maxBuckets: Math.max(16, maxBuckets | 0 || 6000) };
+  }
+
+  function seriesAdd(series, step, value) {
+    if (!Number.isFinite(step) || !Number.isFinite(value)) return series;
+    const b = series.buckets;
+    const i = Math.floor(step / series.w);
+    if (!Number.isFinite(i) || i < 0 || i > 1e8) return series;
+    while (b.length < i) b.push(null);           // gaps, if any
+    const cur = b[i];
+    if (!cur) b[i] = { s0: i * series.w, s1: (i + 1) * series.w - 1, lo: value, hi: value };
+    else {
+      if (value < cur.lo) cur.lo = value;
+      if (value > cur.hi) cur.hi = value;
+    }
+    if (b.length >= series.maxBuckets) {
+      series.w *= 2;                             // uniform: every bucket doubles
+      const nc = [];
+      for (let k = 0; k + 1 < b.length; k += 2) {
+        const a = b[k], c = b[k + 1];
+        nc.push({ s0: k * series.w, s1: (k + 2) * series.w - 1,
+                  lo: Math.min(a.lo, c.lo), hi: Math.max(a.hi, c.hi) });
+      }
+      if (b.length % 2) {
+        const a = b[b.length - 1];
+        nc.push({ s0: (b.length - 1) * series.w, s1: b.length * series.w - 1,
+                  lo: a.lo, hi: a.hi });
+      }
+      series.buckets = nc;
+    }
+    return series;
+  }
+
+  // A point may be a single sample { step, log10 } or a SPAN
+  // { s0, s1, lo, hi } covering a range of steps with the true extremes of
+  // log10 n over that range.  Spans are what decimation produces: merging two
+  // neighbours halves the horizontal resolution but keeps the vertical extent,
+  // so a sawtooth stays visible (as a band) however far the run has gone.
+  // (Older points may carry log10Min instead of lo.)
+  const pS0 = (p) => (p.s0 !== undefined ? p.s0 : p.step);
+  const pS1 = (p) => (p.s1 !== undefined ? p.s1 : p.step);
+  const pLo = (p) => (p.lo !== undefined ? p.lo
+    : (Number.isFinite(p.log10Min) ? p.log10Min : p.log10));
+  const pHi = (p) => (p.hi !== undefined ? p.hi : p.log10);
+
   function chartGeometry(points, w, h, pad) {
     const width = Math.max(2, Math.floor(w));
     const height = Math.max(2, Math.floor(h));
@@ -361,15 +415,13 @@ const FractranCore = (() => {
 
     let lo = Infinity, hi = -Infinity, maxStep = 1;
     let finite = false;
-    const pMin = (p) => (Number.isFinite(p.log10Min) ? p.log10Min : p.log10);
     for (const p of points) {
-      if (!Number.isFinite(p.log10) || !Number.isFinite(p.step)) continue;
+      const s1 = pS1(p), hV = pHi(p), lV = pLo(p);
+      if (!Number.isFinite(s1) || !Number.isFinite(hV) || !Number.isFinite(lV)) continue;
       finite = true;
-      if (p.log10 < lo) lo = p.log10;
-      if (p.log10 > hi) hi = p.log10;
-      const m = pMin(p);
-      if (m < lo) lo = m;
-      if (p.step > maxStep) maxStep = p.step;
+      if (lV < lo) lo = lV;
+      if (hV > hi) hi = hV;
+      if (s1 > maxStep) maxStep = s1;
     }
     if (!finite) return geo;
     if (hi - lo < 1) hi = lo + 1;          // a flat series still gets a scale
@@ -377,14 +429,20 @@ const FractranCore = (() => {
 
     const buckets = new Array(width);
     for (const p of points) {
-      if (!Number.isFinite(p.log10) || !Number.isFinite(p.step)) continue;
-      const c = Math.min(width - 1, Math.max(0, Math.floor(geo.xOf(p.step))));
-      const b = buckets[c];
-      const m = pMin(p);
-      if (!b) buckets[c] = { vMin: m, vMax: p.log10 };
-      else {
-        if (p.log10 > b.vMax) b.vMax = p.log10;
-        if (m < b.vMin) b.vMin = m;
+      const s0 = pS0(p), s1 = pS1(p), lV = pLo(p), hV = pHi(p);
+      if (!Number.isFinite(s0) || !Number.isFinite(s1)
+          || !Number.isFinite(hV) || !Number.isFinite(lV)) continue;
+      // a span paints every column it covers, so coarse (old) data keeps its
+      // full vertical extent instead of leaving isolated dots
+      const c0 = Math.min(width - 1, Math.max(0, Math.floor(geo.xOf(s0))));
+      const c1 = Math.min(width - 1, Math.max(0, Math.floor(geo.xOf(s1))));
+      for (let c = c0; c <= c1; c++) {
+        const b = buckets[c];
+        if (!b) buckets[c] = { vMin: lV, vMax: hV };
+        else {
+          if (hV > b.vMax) b.vMax = hV;
+          if (lV < b.vMin) b.vMin = lV;
+        }
       }
     }
     for (let c = 0; c < width; c++) {
@@ -457,8 +515,8 @@ const FractranCore = (() => {
     gcdBig, isPrime, factorBig,
     parseProgram, parseInput,
     newArithState, arithStep, newFactState, factStep, factToN,
-    evalEventN, evalEventFact, nextFiredIndex, chartGeometry, factToString,
-    nToStringTruncated, log10Approx, log10OfFact,
+    evalEventN, evalEventFact, nextFiredIndex, chartGeometry, makeSeries, seriesAdd,
+    factToString, nToStringTruncated, log10Approx, log10OfFact,
   };
 
 })();
