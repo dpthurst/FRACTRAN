@@ -481,6 +481,36 @@ function check(label, cond, detail) {
     check("syntax help closes", !$("syntaxHelp").classList.contains("open"));
   }
 
+  // ---- named registers must show their PRIME and their name, in both modes ----
+  {
+    click([...window.document.querySelectorAll("#library button")].find((b) => b.dataset.id === "gcd"));
+    // chips mode
+    const chipText = $("registers").textContent;
+    check("chips mode shows the prime with the name",
+      /2\s*input a\s*=\s*48/.test(chipText), chipText.slice(0, 80));
+    // bars mode
+    click(window.document.querySelector('#regMode button[data-mode="bars"]'));
+    const rows = [...window.document.querySelectorAll("#registers .barrow")];
+    const rowFor = (p) => rows.find((r) => r.dataset.prime === p);
+    const r2 = rowFor("2"), r5 = rowFor("5");
+    check("bars mode: every row carries its prime as separate text",
+      rows.every((r) => r.querySelector(".p") && r.querySelector(".p").textContent.trim().length > 0));
+    check("bars mode: prime 2 is labelled with its prime AND its name",
+      r2 && r2.querySelector(".p").textContent.trim() === "2"
+      && r2.querySelector(".nm").textContent.trim() === "input a",
+      r2 && `${r2.querySelector(".p").textContent}|${r2.querySelector(".nm").textContent}`);
+    check("bars mode: an output register shows its name next to its prime",
+      r5 && r5.querySelector(".p").textContent.trim() === "5"
+      && r5.querySelector(".nm").textContent.includes("gcd"),
+      r5 && `${r5.querySelector(".p").textContent}|${r5.querySelector(".nm").textContent}`);
+    check("bars mode: unnamed registers still show their prime",
+      rows.every((r) => r.querySelector(".p").textContent.trim().length > 0),
+      rows.length + " rows");
+    check("bars mode: full name is available as a tooltip",
+      r5 && r5.getAttribute("title").includes("gcd"));
+    click(window.document.querySelector('#regMode button[data-mode="chips"]'));
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);
 })().catch((e) => { console.log("FAIL smoke crashed: " + (e && e.stack || e)); process.exit(1); });

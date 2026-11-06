@@ -172,6 +172,33 @@ await page.click('#btnHelp');
 check('syntax help opens', await page.locator('#syntaxHelp.open').count() === 1);
 await page.screenshot({ path: OUT + '6-blank-and-syntax.png', fullPage: true });
 
+// named registers: prime and name both visible, nothing ellipsized away
+await page.click('#regMode button[data-mode="bars"]');
+await page.click('#library button:has-text("GCD")');
+await page.waitForTimeout(200);
+const regInfo = await page.evaluate(() => {
+  const rows = [...document.querySelectorAll('#registers .barrow')];
+  const trunc = [...document.querySelectorAll('#registers .barrow .nm')]
+    .filter((el) => el.scrollWidth > el.clientWidth + 1).map((el) => el.textContent);
+  return {
+    rows: rows.length,
+    primes: rows.map((r) => r.querySelector('.p').textContent.trim()),
+    named: rows.filter((r) => r.querySelector('.nm').textContent.trim())
+      .map((r) => r.querySelector('.p').textContent.trim() + ' ' + r.querySelector('.nm').textContent.trim()),
+    truncated: trunc,
+  };
+});
+check('bars: every row shows its prime', regInfo.primes.every((p) => p.length > 0),
+  JSON.stringify(regInfo.primes.slice(0, 5)));
+check('bars: named rows show prime + name', regInfo.named[0] === '2 input a', regInfo.named[0]);
+check('bars: no register name is truncated', regInfo.truncated.length === 0,
+  JSON.stringify(regInfo.truncated));
+await page.locator('#registers').screenshot({ path: OUT + '7-registers-named.png' });
+await page.click('#regMode button[data-mode="chips"]');
+check('chips: prime shown with the name',
+  /2\s*input a/.test(await page.textContent('#registers')),
+  (await page.textContent('#registers')).slice(0, 60));
+
 check('no console errors across the whole click-through', errors.length === 0,
   errors.join('; '));
 

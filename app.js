@@ -485,7 +485,8 @@
     const other = entries.filter(([p]) => !legend[String(p)]);
     let html = "";
     for (const [p, e] of named) {
-      html += `<span class="reg named"><b>${escapeHtml(legend[String(p)])}</b> = ${e}</span>`;
+      html += `<span class="reg named" title="register ${p}">`
+        + `<span class="prime">${p}</span> <b>${escapeHtml(legend[String(p)])}</b> = ${e}</span>`;
     }
     for (const [p, e] of other.slice(0, 40)) {
       html += `<span class="reg"><b>${p}</b>^${e}</span>`;
@@ -514,11 +515,11 @@
     for (const p of primes) {
       const e = fact.get(p) || 0;
       const name = legend[String(p)];
-      const label = name ? escapeHtml(name) : `${p}`;
       const pct = Math.max(e > 0 ? 2 : 0, Math.round((e / maxExp) * 100));
       html += `<div class="barrow${name ? " named" : ""}${touched.has(String(p)) ? " touched" : ""}"`
-        + ` data-prime="${p}" title="register ${p}${name ? " (" + escapeHtml(name) + ")" : ""} = ${e}">`
-        + `<span class="lbl">${label}</span>`
+        + ` data-prime="${p}" title="register ${p}${name ? " — " + escapeHtml(name) : ""} = ${e}">`
+        + `<span class="p">${p}</span>`
+        + `<span class="nm">${name ? escapeHtml(name) : ""}</span>`
         + `<span class="track"><span class="fill" style="width:${pct}%"></span></span>`
         + `<span class="val${e === 0 ? " zero" : ""}">${e}</span></div>`;
     }

@@ -206,17 +206,20 @@ label[for="inputN"] { font-size: 11px; text-transform: uppercase; letter-spacing
 #regMode button.on { background: var(--accent2); color: #10202c; border-color: var(--accent2); }
 
 #registers .barrow {
-  display: grid; grid-template-columns: 96px 1fr 42px; align-items: center;
-  gap: 6px; padding: 1px 0; font: 11.5px var(--mono);
+  display: grid; grid-template-columns: 34px minmax(0, 1.05fr) 1.15fr 38px;
+  align-items: center; gap: 6px; padding: 1px 0; font: 11.5px var(--mono);
 }
-#registers .barrow .lbl { color: var(--accent2); overflow: hidden;
-  text-overflow: ellipsis; white-space: nowrap; }
-#registers .barrow.named .lbl { color: var(--accent); }
+#registers .barrow .p { color: var(--accent2); font-weight: 600; }
+#registers .barrow .nm { color: var(--accent); overflow-wrap: anywhere;
+  line-height: 1.15; }
+#registers .barrow.named .p { color: var(--dim); }
 #registers .barrow .track { display: block; background: #141a21; border: 1px solid var(--line);
   border-radius: 3px; height: 12px; overflow: hidden; }
 #registers .barrow .fill { display: block; height: 100%; background: #2f5f86; }
 #registers .barrow.touched .fill { background: var(--accent2); }
-#registers .barrow.touched .lbl { text-decoration: underline; }
+#registers .barrow.touched .nm { text-decoration: underline; }
+#registers .barrow.touched .p { text-decoration: underline; }
+#registers .reg .prime { color: var(--dim); font-size: 10.5px; }
 #registers .barrow .val { text-align: right; color: var(--text); }
 #registers .barrow .val.zero { color: #4a5462; }
 #registers .barscale { color: var(--dim); font: 10.5px var(--mono); margin-top: 3px; }

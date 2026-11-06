@@ -174,7 +174,7 @@ EXAMPLES = [
         ),
         input="2",
         event=dict(kind="monomial", monomial={"2": 1}, minExp=2, label="2^p — p is prime"),
-        registers={"2": "output: n = 2^p exactly when p is prime"},
+        registers={"2": "output 2^p — p is prime"},
         maxSteps=400000,
         description=(
             "Conway's famous 14-fraction prime generator. Starting from 2, "
@@ -197,7 +197,7 @@ EXAMPLES = [
         ),
         input="2",
         event=dict(kind="monomial", monomial={"2": 1}, minExp=2, label="2^p — p is prime"),
-        registers={"2": "output: n = 2^p exactly when p is prime"},
+        registers={"2": "output 2^p — p is prime"},
         maxSteps=400000,
         description=(
             "A variant differing by two fractions (15/14 replaces 1/7 and "
@@ -217,7 +217,7 @@ EXAMPLES = [
         ),
         input="10",
         event=dict(kind="monomial", monomial={"2": 1, "5": 1}, minExp=2, label="10^p — p is prime"),
-        registers={"2": "output 10^p (two-part)", "5": "output 10^p (two-part)"},
+        registers={"2": "output 10^p (part 1)", "5": "output 10^p (part 2)"},
         maxSteps=20000,
         description=(
             "Devin Kilminster's ten-instruction prime generator (1999): "
@@ -241,7 +241,7 @@ EXAMPLES = [
         ),
         input="10",
         event=dict(kind="monomial", monomial={"2": 1, "5": 1}, minExp=2, label="10^p — p is prime"),
-        registers={"2": "output 10^p (two-part)", "5": "output 10^p (two-part)"},
+        registers={"2": "output 10^p (part 1)", "5": "output 10^p (part 2)"},
         maxSteps=20000,
         description=(
             "Kilminster's later shortening of the ten-fraction program "
@@ -295,7 +295,7 @@ EXAMPLES = [
         ),
         input="89",
         event=dict(kind="monomial", monomial={"2": 1}, minExp=1, label="2^d — the next digit of π"),
-        registers={"2": "output: first power of 2 is 2^(digit of π)", "89": "seed"},
+        registers={"2": "output: 2^(next digit of π)", "89": "seed"},
         maxSteps=5000,
         description=(
             "Conway's 40-fraction π machine. The program carries the event "

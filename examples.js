@@ -150,7 +150,7 @@ const FRACTRAN_EXAMPLES = [
       "label": "2^p \u2014 p is prime"
     },
     "registers": {
-      "2": "output: n = 2^p exactly when p is prime"
+      "2": "output 2^p \u2014 p is prime"
     },
     "maxSteps": 400000,
     "description": "Conway's famous 14-fraction prime generator. Starting from 2, the trajectory wanders through junk values \u2014 but the only times n is a pure power of two, the exponent is prime: 2^2, 2^3, 2^5, 2^7, 2^11 \u2026 Watch the event panel and the orange dots on the chart. Under the hood it is a division-based primality test (Guy 1983 gives the walkthrough); reaching 2, 3, 5, 7 takes 19, 69, 281, 710 steps.",
@@ -171,7 +171,7 @@ const FRACTRAN_EXAMPLES = [
       "label": "2^p \u2014 p is prime"
     },
     "registers": {
-      "2": "output: n = 2^p exactly when p is prime"
+      "2": "output 2^p \u2014 p is prime"
     },
     "maxSteps": 400000,
     "description": "A variant differing by two fractions (15/14 replaces 1/7 and 15/2 moves next to it). It reaches the same primes a little faster: 2, 3, 5, 7 after 19, 69, 280, 707 steps. A nice exercise: diff the two programs and the two step counts.",
@@ -193,8 +193,8 @@ const FRACTRAN_EXAMPLES = [
       "label": "10^p \u2014 p is prime"
     },
     "registers": {
-      "2": "output 10^p (two-part)",
-      "5": "output 10^p (two-part)"
+      "2": "output 10^p (part 1)",
+      "5": "output 10^p (part 2)"
     },
     "maxSteps": 20000,
     "description": "Devin Kilminster's ten-instruction prime generator (1999): starting from 10, the successive powers of ten that appear have prime exponents \u2014 10^2, 10^3, 10^5, 10^7, 10^11 \u2026, here at steps 16, 67, 256, 617, 1659, 2830, 5098. Wikipedia's article carries an editor's note asking someone to check this listing against Havil's book for typos; it verifies clean. (Our first verification pass 'failed' it \u2014 that was a bug in our own event checker, fixed before shipping; see README.)",
@@ -216,8 +216,8 @@ const FRACTRAN_EXAMPLES = [
       "label": "10^p \u2014 p is prime"
     },
     "registers": {
-      "2": "output 10^p (two-part)",
-      "5": "output 10^p (two-part)"
+      "2": "output 10^p (part 1)",
+      "5": "output 10^p (part 2)"
     },
     "maxSteps": 20000,
     "description": "Kilminster's later shortening of the ten-fraction program above, to nine fractions \u2014 and measurably faster: 10^2, 10^3, 10^5, 10^7, 10^11 \u2026 arrive at steps 10, 46, 196, 500, 1428 (the ten-fraction version needs 16, 67, 256, 617, 1659). Both programs make a nice race: run them side by side with the 'next event' button.",
@@ -261,7 +261,7 @@ const FRACTRAN_EXAMPLES = [
       "label": "2^d \u2014 the next digit of \u03c0"
     },
     "registers": {
-      "2": "output: first power of 2 is 2^(digit of \u03c0)",
+      "2": "output: 2^(next digit of \u03c0)",
       "89": "seed"
     },
     "maxSteps": 5000,
