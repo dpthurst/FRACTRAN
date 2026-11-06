@@ -146,6 +146,32 @@ check('PIGAME event decodes the digit 3',
   (await page.textContent('#events')).includes('= 3'));
 await page.screenshot({ path: OUT + '5-pigame-event.png', fullPage: true });
 
+// next event twice: the second press must advance, not stall.
+// PRIMEGAME: first event at step 19 (2^2), second at 69 (2^3).
+await page.click('#library button:has-text("PRIMEGAME (Conway)")');
+await page.selectOption('#speed', 'max');
+await page.click('#btnNext');
+await page.waitForFunction(() => !document.getElementById('btnRun').textContent.includes('pause'),
+  null, { timeout: 15000 });
+const evStep1 = (await page.textContent('#stepCounter')).replace(/\D/g, '');
+await page.click('#btnNext');
+await page.waitForFunction(() => !document.getElementById('btnRun').textContent.includes('pause'),
+  null, { timeout: 20000 });
+const evStep2 = (await page.textContent('#stepCounter')).replace(/\D/g, '');
+check('next event twice advances to the second event', evStep1 === '19' && evStep2 === '69',
+  `${evStep1} -> ${evStep2}`);
+check('exactly two events recorded', (await page.locator('#events .ev').count()) === 2);
+
+// blank program
+await page.click('#btnBlank');
+check('blank starts a fresh program',
+  (await page.inputValue('#program')).startsWith('3/2'));
+check('blank clears the active example',
+  (await page.locator('#library button.active').count()) === 0);
+await page.click('#btnHelp');
+check('syntax help opens', await page.locator('#syntaxHelp.open').count() === 1);
+await page.screenshot({ path: OUT + '6-blank-and-syntax.png', fullPage: true });
+
 check('no console errors across the whole click-through', errors.length === 0,
   errors.join('; '));
 

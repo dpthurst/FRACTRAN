@@ -428,6 +428,59 @@ function check(label, cond, detail) {
       $("events").textContent.slice(0, 60));
   }
 
+  // ---- "next event" pressed while already ON an event must advance to the
+  // NEXT one (it used to record a duplicate at the same state and do nothing) ----
+  {
+    click([...window.document.querySelectorAll("#library button")].find((b) => b.dataset.id === "primegame"));
+    $("speed").value = "max";
+    click($("btnNext"));
+    const t0 = Date.now();
+    while (Date.now() - t0 < 5000 && $("btnRun").textContent.includes("pause")) await sleep(25);
+    const firstStep = stepNum();
+    const evCount1 = window.document.querySelectorAll("#events .ev").length;
+    check("first next-event parks at the first event", firstStep === 19 && evCount1 === 1,
+      `step ${firstStep}, ${evCount1} events`);
+    // park again from the SAME state
+    click($("btnNext"));
+    const t1 = Date.now();
+    while (Date.now() - t1 < 8000 && $("btnRun").textContent.includes("pause")) await sleep(25);
+    const secondStep = stepNum();
+    const evCount2 = window.document.querySelectorAll("#events .ev").length;
+    check("next-event from an event advances to the NEXT event", secondStep > firstStep,
+      `${firstStep} -> ${secondStep}`);
+    check("and records exactly one more event (no duplicate at the old step)",
+      evCount2 === evCount1 + 1, `${evCount1} -> ${evCount2}`);
+    check("the new event is the next prime (2^3 at step 69)",
+      secondStep === 69 && $("events").textContent.includes("= 3"),
+      `step ${secondStep}`);
+  }
+
+  // ---- blank button: a fresh program to start from ----
+  {
+    click($("btnBlank"));
+    check("blank clears the example selection",
+      window.document.querySelectorAll("#library button.active").length === 0);
+    check("blank leaves a minimal editable program",
+      $("program").value.split("\n")[0].trim() === "3/2", $("program").value.split("\n")[0]);
+    check("blank resets the run", stepNum() === 0, String(stepNum()));
+    check("blank parses without errors", $("program-errors").textContent === "",
+      $("program-errors").textContent);
+    check("blank focuses the editor for typing",
+      window.document.activeElement === $("program"));
+  }
+
+  // ---- syntax help is reachable from the program pane ----
+  {
+    check("syntax help is hidden initially",
+      !$("syntaxHelp").classList.contains("open"));
+    click($("btnHelp"));
+    check("syntax help opens", $("syntaxHelp").classList.contains("open"));
+    check("syntax help documents the event directive",
+      $("syntaxHelp").textContent.includes("# event: pow(2)"));
+    click($("btnHelp"));
+    check("syntax help closes", !$("syntaxHelp").classList.contains("open"));
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);
 })().catch((e) => { console.log("FAIL smoke crashed: " + (e && e.stack || e)); process.exit(1); });

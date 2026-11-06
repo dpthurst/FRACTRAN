@@ -133,6 +133,20 @@ label[for="inputN"] { font-size: 11px; text-transform: uppercase; letter-spacing
 }
 #stepCounter { color: var(--dim); font: 12px var(--mono); margin-left: auto; }
 #progMeta { color: var(--dim); font-size: 11px; }
+#btnBlank, #btnHelp {
+  background: transparent; color: var(--dim); border: 1px solid var(--line);
+  border-radius: 4px; padding: 0 6px; font: 10.5px var(--mono); cursor: pointer;
+  text-transform: none; letter-spacing: 0;
+}
+#btnBlank:hover, #btnHelp:hover { color: var(--accent2); border-color: var(--accent2); }
+#program-pane .pane-title { display: flex; align-items: center; gap: 6px; }
+#program-pane .pane-title #progMeta { margin-right: auto; }
+#syntaxHelp {
+  display: none; font: 11.5px var(--mono); color: var(--dim);
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 8px; margin: 6px 0; white-space: pre-wrap;
+}
+#syntaxHelp.open { display: block; }
 
 /* ---------- state pane ---------- */
 

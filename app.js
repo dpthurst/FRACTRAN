@@ -152,8 +152,15 @@
     if (spec && spec.kind === "monomial") {
       const ev = evalEventHere(spec);
       if (ev.fire) {
-        recordEvent(st.step, ev, spec);
-        if (stopBeforeEvent) return "event";   // stop AT the event state
+        // "next event" means the NEXT one: an event already at the current
+        // state was recorded when we arrived, so do not record it again —
+        // just step past it (an event marks a self-loop for a while).
+        const already = events.length && events[events.length - 1].step === st.step;
+        if (stopBeforeEvent && !already) {
+          recordEvent(st.step, ev, spec);
+          return "event";                  // park ON the event state
+        }
+        if (!already) recordEvent(st.step, ev, spec);
       }
     }
     if (chart.length === 0 || chart[chart.length - 1].step !== st.step) {
@@ -759,6 +766,21 @@
   $("btnNext").addEventListener("click", () => startRun(true));
   $("btnBack").addEventListener("click", doBack);
   $("btnReset").addEventListener("click", reset);
+  $("btnBlank").addEventListener("click", () => {
+    // a fresh program: one fraction and a trivial event spec, with focus in
+    // the editor so typing replaces it
+    example = null;
+    markActive();
+    $("program").value = "3/2\n# event: pow(2)";
+    $("inputN").value = "2^6";
+    location.hash = "";
+    reset();
+    $("program").focus();
+    $("program").setSelectionRange(0, $("program").value.length);
+  });
+  $("btnHelp").addEventListener("click", () => {
+    $("syntaxHelp").classList.toggle("open");
+  });
   $("btnApply").addEventListener("click", () => { example = null; markActive(); reset(); });
   $("speed").addEventListener("change", () => {
     if (!running) return;

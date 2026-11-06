@@ -46,7 +46,12 @@ python3 -m http.server 8000     # then http://localhost:8000
   with the amber chip marking the fraction that just fired and the outlined
   chip the one that will fire next.
 - **Controls:** step / run / back / next-event / reset, at 10 → max steps
-  per second (space = run/pause, ←/→ = back/step).
+  per second (space = run/pause, ←/→ = back/step).  **blank** (top-right of
+  the program pane) starts you on a minimal editable program with no example
+  selected; **syntax** beside it shows the fraction, input and event
+  directives.  ⏭ next event means the *next* one — pressed while already
+  sitting on an event, it runs on to the following event rather than doing
+  nothing.
 - **State (right):** the fraction that fired, `n` itself (copy button for the
   full value), the register view, and the decoded events.
   Registers have two displays, toggled above the panel: **chips** (only the

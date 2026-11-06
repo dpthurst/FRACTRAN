@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FRACTRAN playground</title>
-<link rel="stylesheet" href="style.css?v=2026-11-04T22:45Z">
+<link rel="stylesheet" href="style.css?v=2026-11-06T14:08Z">
 </head>
 <body>
 <header id="topbar">
@@ -32,9 +32,20 @@
 
   <section id="program-pane">
     <div class="pane-title">program
-      <span id="progMeta"></span></div>
+      <span id="progMeta"></span>
+      <button id="btnBlank" title="start over with an empty program">blank</button>
+      <button id="btnHelp" title="how to write a program, an input and an event spec">syntax</button>
+    </div>
     <textarea id="program" spellcheck="false" rows="14"></textarea>
     <div id="fracstrip" aria-label="program fractions — the amber chip is the fraction that just fired"></div>
+    <div id="syntaxHelp">fractions:  a/b  (or a)   separated by spaces or commas
+comments:   # or // to end of line
+input:      decimal, or prime powers  2^12 * 3^5
+events:     # event: pow(2)             n a pure power of 2
+            # event: pow(2*5, min=2)    n = 2^k·5^k, k >= 2
+            # event: halt(5)            at halt, report exponent of 5
+            # event: none               no events
+            -- text after "--" is the event\'s label</div>
     <div id="program-errors"></div>
     <label for="inputN">input&nbsp;n</label>
     <div class="input-row">
@@ -92,11 +103,11 @@
   language for arithmetic</em> (1987). Example sources are named per program;
   every published program here is verified computationally by
   <code>tools/oracle.py</code> (see README).
-  <span id="build" class="build">2026-11-04T22:45Z</span>
+  <span id="build" class="build">2026-11-06T14:08Z</span>
 </footer>
 
-<script src="core.js?v=2026-11-04T22:45Z"></script>
-<script src="examples.js?v=2026-11-04T22:45Z"></script>
-<script src="app.js?v=2026-11-04T22:45Z"></script>
+<script src="core.js?v=2026-11-06T14:08Z"></script>
+<script src="examples.js?v=2026-11-06T14:08Z"></script>
+<script src="app.js?v=2026-11-06T14:08Z"></script>
 </body>
 </html>
