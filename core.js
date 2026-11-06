@@ -371,14 +371,20 @@ const FractranCore = (() => {
     if (b.length >= series.maxBuckets) {
       series.w *= 2;                             // uniform: every bucket doubles
       const nc = [];
-      for (let k = 0; k + 1 < b.length; k += 2) {
-        const a = b[k], c = b[k + 1];
-        nc.push({ s0: k * series.w, s1: (k + 2) * series.w - 1,
+      // old buckets 2j and 2j+1 become new bucket j, covering
+      // [j*w, (j+1)*w - 1] at the NEW width.  (Taking the old index for the
+      // new bucket's position made every merged bucket land one grid step
+      // too far right, so later samples were misattributed and values were
+      // lost — events then plotted off the curve.)
+      for (let j = 0; 2 * j + 1 < b.length; j++) {
+        const a = b[2 * j], c = b[2 * j + 1];
+        nc.push({ s0: j * series.w, s1: (j + 1) * series.w - 1,
                   lo: Math.min(a.lo, c.lo), hi: Math.max(a.hi, c.hi) });
       }
       if (b.length % 2) {
+        const j = (b.length - 1) / 2;
         const a = b[b.length - 1];
-        nc.push({ s0: (b.length - 1) * series.w, s1: b.length * series.w - 1,
+        nc.push({ s0: j * series.w, s1: (j + 1) * series.w - 1,
                   lo: a.lo, hi: a.hi });
       }
       series.buckets = nc;

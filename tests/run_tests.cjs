@@ -429,6 +429,39 @@ for (const ex of EXAMPLES) {
     `${narrow.length} of ${buckets.length} buckets have a hairline range`);
 }
 
+  // invariant: every sample must belong to the bucket that covers its step —
+  // this is what keeps an event dot inside the drawn band
+  {
+    const s = C.makeSeries(512);            // small cap: many merges
+    let misplaced = 0, checked = 0;
+    const vals = new Map();
+    for (let t = 0; t < 20000; t++) {
+      const v = (t * 7919) % 1000;          // deterministic, spiky
+      vals.set(t, v);
+      C.seriesAdd(s, t, v);
+      // spot-check the current grid alignment
+      if (t % 500 === 0) {
+        const b = s.buckets;
+        for (let i = 0; i < b.length; i++) {
+          if (!b[i]) continue;
+          checked++;
+          if (b[i].s0 !== i * s.w || b[i].s1 !== (i + 1) * s.w - 1) misplaced++;
+        }
+      }
+    }
+    check("series: buckets tile the grid exactly (s0 = i*w, s1 = (i+1)*w-1)",
+      misplaced === 0, `${misplaced} of ${checked} misaligned`);
+    // and no sample's value may be missing from its own bucket
+    let missing = 0;
+    for (const [t, v] of vals) {
+      const i = Math.floor(t / s.w);
+      const b = s.buckets[i];
+      if (!b || v < b.lo - 1e-9 || v > b.hi + 1e-9) missing++;
+    }
+    check("series: every sample's value is inside its own bucket",
+      missing === 0, `${missing} values lost`);
+  }
+
 // ---------------- summary ----------------
 
 console.log(`\n${passed} passed, ${failed} failed`);
